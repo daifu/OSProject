@@ -34,3 +34,14 @@ struct command
     struct command *subshell_command;
   } u;
 };
+
+// Data associated with a command stream
+struct command_stream
+{
+  char* head; // head pointer of the stream
+  unsigned int size;
+  int max_size; // may not needed
+  int line_num; // the line # of the command, use for error detection
+  struct command_stream* next; // pointer to next command
+  struct command_stream* prev; // pointer to previous command
+};
