@@ -5,6 +5,7 @@
 #include "alloc.h"
 
 #include <error.h>
+#include <stdio.h>
 
 
 /* function declaration */
@@ -19,18 +20,26 @@ command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
 		     void *get_next_byte_argument)
 {
-  /* FIXME: Replace this with your implementation.  You may need to
-     add auxiliary functions and otherwise modify the source code.
-     You can also use external functions defined in the GNU C Library.  */
-  error (1, 0, "command reading not yet implemented");
-  return 0;
+  // TODO:
+  // 1. create a command_stream object using alloc
+  // 2. populate the object based on the get_next_byte(get_next_byte_argument)
+  // 3. store a command line until \n
+  // 4. keep track of the number of lines while looping trough the file_stream
+  // 5. Ignored the comments and the empty lines
+  command_stream_t new_stream = checked_malloc(sizeof(struct command_stream));
+  
+  return new_stream;
 }
 
 command_t
 read_command_stream (command_stream_t s)
 {
-  /* FIXME: Replace this with your implementation too.  */
-  error (1, 0, "command reading not yet implemented");
+  // TODO: 
+  // 1. Check if the command_stream_t s is END or not, if it is, return NULL
+  // 2. If the command stream is not END, then process our logic with the stream
+  // 3. Return the result
+  printf("Using the read_command_stream.\n");
+  /* printf("command_stream max size: %d.\n", s->max_size); */
   return 0;
 }
 
@@ -42,5 +51,4 @@ init_command_stream(command_stream_t new_stream)
   new_stream->size = 0;
   new_stream->next = NULL;
   new_stream->prev = NULL;
-  
 }
