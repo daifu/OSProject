@@ -21,7 +21,25 @@ void init_command_stream(command_stream_t new_stream); // initialize an empty co
 int is_word(char c); // check if a character is a word (word definition is in the lab manual)
 int is_special_token(char); // check if a character is a special character (8 tokens in the lab manual)
 int is_comment(char); // check if char is #
-int is_white_space(char); // check if white space but NOT new line 
+int is_white_space(char); // check if white space but NOT new line
+
+// TODO: sub task, should be easy
+command_t make_simple_command(command_stream_t s); // make a simple command from the command stream passed in
+command_t make_and_command(command_t a1, command_t a2); // make and command
+command_t make_or_command(command_t o1, command_t o2); // make or command
+command_t make_pipe_command(command_t p1, command_t p2); // make pipeline command
+command_t make_sequence_command(command_t s1, command_t s2); // make sequence command
+command_t make_subshell_command(command_t sub); // make subshell command 
+
+// TODO: main tasks, do as the TA said in the discussion 
+//			 see more detail in functions implementation below, you can
+//			 change the type and number of argument as necessary
+command_t read_simple_command(command_stream_t s);
+command_t read_and_or_command(command_stream_t s);
+command_t read_pipeline_command(command_stream_t s);
+command_t read_sequence_command(command_stream_t s);
+command_t read_subshell_command(command_stream_t s);
+ 
 /* end function declaration section */
 
 
@@ -48,19 +66,18 @@ make_command_stream (int (*get_next_byte) (void *),
   int line_num = 1;
   char c = get_next_byte(get_next_byte_argument);
   
-	printf("c is %c\n", c);
+	//printf("c is %c\n", c);
   while (c != EOF)
   {
     // ignoring beginning white space
     while((c == ' ') || (c == '\t'))
 		{
-			printf("White space \n");
 			c = get_next_byte(get_next_byte_argument);
 		}
 		// ignore comment, read until see an end-of-line
 		if (c == '#')
 		{
-			printf("Comment\n");
+			//printf("Comment\n");
 			while (c != '\n')
 				c = get_next_byte(get_next_byte_argument);
 		}
@@ -74,7 +91,7 @@ make_command_stream (int (*get_next_byte) (void *),
 		{	
 			new_stream = checked_malloc(sizeof(struct command_stream));
   		init_command_stream(new_stream);
-			while(is_word(c) || c == ' ' || c == '\t')
+			while(is_word(c))
 			{
 				if(current_pos == max_size) // text too big, need grow in size
 				{
@@ -102,7 +119,7 @@ make_command_stream (int (*get_next_byte) (void *),
 			}
 			
 #ifdef debug
-			printf("New stream's text: %s\n", new_stream->head);
+			//printf("New stream's text: %s\n", new_stream->head);
 #endif
 			// reverse len and position
 			max_size = INIT_LENGTH;
@@ -123,8 +140,10 @@ make_command_stream (int (*get_next_byte) (void *),
 			//c = get_next_byte(get_next_byte_argument);
 			if(c == '&')
 			{
+				printf("Read %c\n",c);
 				// read next char, if not another &, output error
 				c = get_next_byte(get_next_byte_argument);
+				printf("Next char %c\n",c);
 				if(c != '&')
 				{
 					error(1,0, "Syntax error, missing & at linenum %i",line_num);
@@ -137,11 +156,14 @@ make_command_stream (int (*get_next_byte) (void *),
 					new_stream->head[current_pos] = c;
 					current_pos++;
 				}
+				c = get_next_byte(get_next_byte_argument);
 			}
 			else if(c == '|')
 			{
+				printf("Read %c\n",c);
 				// read next char, if not another | or not a word, output error
 				c = get_next_byte(get_next_byte_argument);
+				printf("Next char %c\n",c);
 				if(c != '|' && c != ' ' && c != '\n' && c != '\t' && !is_word(c))
 				{
 					error(1,0, "Syntax error, | at linenum %i",line_num);
@@ -153,7 +175,8 @@ make_command_stream (int (*get_next_byte) (void *),
 					//c = get_next_byte(get_next_byte_argument);
 					new_stream->head[current_pos] = c;
 					current_pos++;
-				} 
+					c = get_next_byte(get_next_byte_argument); 
+				}
 			}
 			else // other special char
 			{
@@ -199,7 +222,7 @@ make_command_stream (int (*get_next_byte) (void *),
 		}	
   }
 
-	printf("Head stream: %s\n", head_stream->head);
+	//printf("Head stream: %s\n", head_stream->head);
 #ifdef debug
 	print_cmd_stream(head_stream);
 #endif
@@ -248,13 +271,46 @@ is_comment(char c) // check if char is #
   return (c == '#');
 }
 
+
+/* TODO TASK HERE */
+command_t read_simple_command(command_stream_t s)
+{
+	return 0;
+}
+command_t read_and_or_command(command_stream_t s)
+{
+	return 0;
+}
+command_t read_pipeline_command(command_stream_t s)
+{
+	return 0;
+}
+command_t read_sequence_command(command_stream_t s)
+{
+	return 0;
+}
+command_t read_subshell_command(command_stream_t s)
+{
+	return 0;
+}
+
+/* END TODO 		 */
+
+
 /* debug function */
 void print_cmd_stream(command_stream_t s)
 {
+	int line_num = 1;
 	while (s != NULL)
 	{
+		if(s->line_num != line_num)
+		{
+			printf("\n");
+			line_num = s->line_num;
+		}
 		printf("%s ",s->head);
 		s = s->next;
+		
 	}
 	printf("\n");
 }
