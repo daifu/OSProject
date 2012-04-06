@@ -48,6 +48,7 @@ make_command_stream (int (*get_next_byte) (void *),
   int line_num = 1;
   char c = get_next_byte(get_next_byte_argument);
   
+	printf("c is %c\n", c);
   while (c != EOF)
   {
     // ignoring beginning white space
@@ -107,7 +108,7 @@ make_command_stream (int (*get_next_byte) (void *),
 			max_size = INIT_LENGTH;
 			current_pos = 0;
 		}
-		if(is_special_token(c)) // deal with special token
+		else if(is_special_token(c)) // deal with special token
 		{
 			new_stream = checked_malloc(sizeof(struct command_stream));
   		init_command_stream(new_stream);
@@ -187,14 +188,12 @@ make_command_stream (int (*get_next_byte) (void *),
 			max_size = INIT_LENGTH;
 			current_pos = 0;
 		}
-
-		if (c == '\n') // new line, increase line number
+		else if (c == '\n') // new line, increase line number
 		{
 			line_num++;
 			c = get_next_byte(get_next_byte_argument);
 		}
-		
-		if (!is_word(c) && !is_special_token(c) && c != ' ' && c != '\n' && c != '\t' && c != EOF)
+		else if (!is_word(c) && !is_special_token(c) && c != ' ' && c != '\n' && c != '\t' && c != EOF)
 		{
 			error(1, 0, "%i: unrecognized symbol %c.", line_num, c);
 		}	
