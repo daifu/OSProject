@@ -11,7 +11,7 @@
 /* function declaration */
 void init_command_stream(command_stream_t new_stream); // initialize an empty command stream
 int is_word(char c); // check if a character is a word (word definition is in the lab manual)
-int is_speacial_token(char); // check if a character is a special character (8 tokens in the lab manual)
+int is_special_token(char); // check if a character is a special character (8 tokens in the lab manual)
 int is_comment(char); // check if char is #
 int is_white_space(char); // check if white space but NOT new line 
 /* end function declaration section */
@@ -51,4 +51,24 @@ init_command_stream(command_stream_t new_stream)
   new_stream->size = 0;
   new_stream->next = NULL;
   new_stream->prev = NULL;
+}
+
+int
+is_word(char c)
+{
+  return isalpha(c) || isdigit(c) || (c == '!') || (c == '%') || (c == '+') || (c == ',')
+                        || (c == '-') || (c == '.') || (c == '/') || (c == ':') || (c == '@') || (c == '^')
+                        || (c == '_');
+}
+
+int 
+is_special_token(char c) // check if a character is a special character (8 tokens in the lab manual)
+{
+  return (c == '|') || (c == '&') || (c == ';') || (c == '(') || (c == ')') || (c == '<') || (c == '>');
+}
+
+int 
+is_comment(char c) // check if char is #
+{
+  return (c == '#');
 }
