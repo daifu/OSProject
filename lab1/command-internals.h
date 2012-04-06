@@ -45,4 +45,6 @@ struct command_stream
   int line_num; // the line # of the command, use for error detection
   struct command_stream* next; // pointer to next command
   struct command_stream* prev; // pointer to previous command
+	//char* next;
+	//char* prev;
 };

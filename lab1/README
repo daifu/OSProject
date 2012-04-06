@@ -2,3 +2,18 @@ This is a skeleton for CS 111 Lab 1.
 
 Replace this README file with notes on your implementation.
 Mentions any special features or limitations.
+
+Make-command-stream now can print out the command stream successfully (I hope so, need more teast cases)
+Each "command" (word or special character) is store one command_stream struct and link to the next command by a pointer.For example:
+	sort -k2 d - < a | uniq -c > e
+	Become: 
+			- struct 1: head = sort
+									next = struct 2
+			- struct 2: head = -k2
+									next = struct 3
+			- struct 3: head = d...
+	Note that special character like < the its struct's head = <
+Make-command-stream read the stream and ignore all the white space, new line, comment (need tested)
+
+What to do next:
+	Read each command token, build a command tree and save each command into command struct with its type

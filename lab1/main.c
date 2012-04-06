@@ -7,6 +7,8 @@
 
 #include "command.h"
 
+#define debug
+
 static char const *program_name;
 static char const *script_name;
 
