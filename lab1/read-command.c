@@ -1,12 +1,15 @@
 // UCLA CS 111 Lab 1 command reading
 
+
 #include "command.h"
 #include "command-internals.h"
 #include "alloc.h"
 
+
 #include <error.h>
 #include <stdio.h>
-
+#include <stdlib.h>
+#include <ctype.h>
 
 /* function declaration */
 void init_command_stream(command_stream_t new_stream); // initialize an empty command stream
