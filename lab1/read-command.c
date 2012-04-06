@@ -74,7 +74,7 @@ make_command_stream (int (*get_next_byte) (void *),
 		{	
 			new_stream = checked_malloc(sizeof(struct command_stream));
   		init_command_stream(new_stream);
-			while(is_word(c))
+			while(is_word(c) || c == ' ' || c == '\t')
 			{
 				if(current_pos == max_size) // text too big, need grow in size
 				{
