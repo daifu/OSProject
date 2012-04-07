@@ -1,2 +1,2 @@
 # cat b - | tr A-Z a-z > c
-cat b | tar ab
+cat b | tar ab && ls
