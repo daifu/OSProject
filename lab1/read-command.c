@@ -25,7 +25,7 @@ int is_comment(char); // check if char is #
 int is_white_space(char); // check if white space but NOT new line
 
 // TODO: sub task, should be easy
-command_t make_simple_command(command_stream_t s); // make a simple command from the command stream passed in
+command_t make_simple_command(command_stream_t* s); // make a simple command from the command stream passed in
 command_t make_and_command(command_t a1, command_t a2); // make and command
 command_t make_or_command(command_t o1, command_t o2); // make or command
 command_t make_pipe_command(command_t p1, command_t p2); // make pipeline command
@@ -228,7 +228,8 @@ make_command_stream (int (*get_next_byte) (void *),
 	//printf("Head stream: %s\n", head_stream->head);
 #ifdef debug
 	//print_cmd_stream(head_stream);
-	command_t test = make_simple_command(head_stream);
+	command_stream_t* curr = NULL;
+	command_t test = make_simple_command(&head_stream);
 	int i = 0;
 	while(test->u.word[i] != 0)
 	{
@@ -236,6 +237,11 @@ make_command_stream (int (*get_next_byte) (void *),
 		i++;
 	}
 	printf("\n");
+	if(curr == NULL)
+		printf("NULL\n");
+	else
+		head_stream = (*curr);
+	printf("Head stream is %s\n", head_stream->head);
 #endif
   return head_stream;
 }
@@ -322,7 +328,7 @@ read_subshell_command(command_stream_t s)
 
 // sub tasks
 command_t 
-make_simple_command(command_stream_t s) // This one only pass syntax error NOT TESTED yet, use with your own risk
+make_simple_command(command_stream_t* s) // This one only pass syntax error NOT TESTED yet, use with your own risk
 {
 	command_t result = (command_t)checked_malloc(sizeof(struct command));
 	result->type = SIMPLE_COMMAND;
@@ -336,27 +342,27 @@ make_simple_command(command_stream_t s) // This one only pass syntax error NOT T
 	size_t resize = max_size;
 	
 	result->u.word = (char**)checked_malloc(sizeof(char*) * max_size);
-	while(s != NULL)
+	while((*s) != NULL)
 	{
 		//printf("s is not NULL\n");
-		char c = s->head[0];
+		char c = (*s)->head[0];
 		if(is_word(c))
 		{
-			printf("Read %s\n", s->head);
+			//printf("Read %s\n", s->head);
 			if(current_pos == max_size) // text too big, need grow in size
 				{
 					max_size = max_size * 2;
 					resize = max_size *sizeof(char);
 					result->u.word = checked_grow_alloc(result->u.word, &resize);
 				}
-			result->u.word[current_pos] = (char*)checked_malloc(s->token_size * sizeof(char));
-			result->u.word[current_pos] = memcpy(result->u.word[current_pos], s->head, s->token_size);
+			result->u.word[current_pos] = (char*)checked_malloc((*s)->token_size * sizeof(char));
+			result->u.word[current_pos] = memcpy(result->u.word[current_pos], (*s)->head, (*s)->token_size);
 			current_pos++;
-			printf("Word after copied %s\n",result->u.word[current_pos-1]);
+			//printf("Word after copied %s\n",result->u.word[current_pos-1]);
 		}
 		else // not word, break the loop
 		{
-			printf("Read %s\n", s->head);
+			//printf("Read %s\n", s->head);
 			if(current_pos == max_size) // text too big, need grow in size
 				{
 					max_size = max_size * 2;
@@ -366,8 +372,10 @@ make_simple_command(command_stream_t s) // This one only pass syntax error NOT T
 			result->u.word[current_pos] = 0;
 			break;
 		}
-		s = s->next;
+		(*s) = (*s)->next;
 	}
+	printf("s is %s\n", (*s)->head);
+	//current_point = &s; // save the current position of pointer
 	printf("Return OK\n");
 	return result;
 } 
