@@ -19,7 +19,6 @@ struct command
   int status;
 
   // I/O redirections, or 0 if none.
-	// Not sure what is the differences between input and output
   char *input;
   char *output;
 
