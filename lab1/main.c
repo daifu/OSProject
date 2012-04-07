@@ -57,7 +57,7 @@ main (int argc, char **argv)
   command_t last_command = NULL;
   command_t command;
   command_stream_t *pcs = &command_stream;
-  if ((command = read_command_stream(pcs)))
+  while ((command = read_command_stream(pcs)))
   {
     if (print_tree)
     {
