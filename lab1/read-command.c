@@ -386,13 +386,9 @@ read_simple_command(command_stream_t* s)
 	// this is the lowest lever command
 	printf("read_simple_command: next head: %s\n", (*s)->head);
   command_t cmd = make_simple_command(s);
-  //s = s->next;
-
-	command_stream_t tmp = (*s);
 		
-	if(tmp != NULL && strcmp(tmp->head, "<") == 0) // input
+	if(strcmp((*s)->head, "<") == 0) // input
 	{
-		//(*s) = (*s)->next;
 		printf("Hit <\n");
 		if(!is_word((*s)->next->head[0])) // after < is not a word
 		{
@@ -400,36 +396,21 @@ read_simple_command(command_stream_t* s)
 		}
 		cmd->input = checked_malloc(2*sizeof(char));
 		strcpy(cmd->input, (*s)->next->head);
-		printf("input =%s\n", cmd->input);
-		if((*s) != NULL)
-			(*s) = (*s)->next;
-		else
-			error(1,0, "Unexpected error");
-		tmp = (*s);
+		printf("input = %s\n", cmd->input);
+		(*s) = (*s)->next->next; // move 2 setp forwards because it must has argument
 	}
-	if(tmp != NULL && strcmp(tmp->head, ">") == 0) // output
+  else if(strcmp((*s)->head, ">") == 0) // output
 	{
-		//(*s) = (*s)->next;
 		if(!is_word((*s)->next->head[0])) // after < is not a word
 		{
 			error(1,0, "Syntax error at linenum %i", (*s)->next->line_num);
 		}
 		cmd->output = checked_malloc(2*sizeof(char));
 		strcpy(cmd->output, (*s)->next->head);
-		printf("output =%s\n", cmd->output);
-		if((*s) != NULL)
-			(*s) = (*s)->next;
-		else
-			error(1,0, "Unexpected error");
+		printf("output = %s\n", cmd->output);
+		(*s) = (*s)->next->next;
 	}
 	
-  //Debug
-	/*
-	if((*s) != NULL)
-  	printf("read_simple_command: next head: %s\n", (*s)->head);
-	else
-		printf("read_simple_command:NULL\n");
-	*/
 	return cmd;
 }
 
