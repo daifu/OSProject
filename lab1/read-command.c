@@ -12,7 +12,7 @@
 #include <ctype.h>
 #include <string.h>
 
-#define debug
+/* #define debug false */
 
 /* constant definition */
 #define INIT_LENGTH 4
@@ -35,12 +35,14 @@ command_t make_subshell_command(command_t sub); // make subshell command
 // TODO: main tasks, do as the TA said in the discussion 
 //			 see more detail in functions implementation below, you can
 //			 change the type and number of argument as necessary
+// helper functions
+enum command_type read_command_type(char *command);
+
 command_t read_simple_command(command_stream_t* s);
 command_t read_and_or_command(command_stream_t* s);
 command_t read_pipeline_command(command_stream_t* s);
 command_t read_sequence_command(command_stream_t* s);
 command_t read_subshell_command(command_stream_t* s);
- 
 /* end function declaration section */
 
 
@@ -55,7 +57,6 @@ command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
 		     void *get_next_byte_argument)
 {
-  // TODO:
   // 1. create a command_stream object using alloc
   // 2. populate the object based on the get_next_byte(get_next_byte_argument)
   // 3. store a command line until \n
@@ -125,7 +126,7 @@ make_command_stream (int (*get_next_byte) (void *),
 			}
 			
 #ifdef debug
-			//printf("New stream's text: %s\n", new_stream->head);
+			/* printf("New stream's text: %s\n", new_stream->head); */
 #endif
 			// reverse len and position
 			max_size = INIT_LENGTH;
@@ -289,6 +290,7 @@ make_command_stream (int (*get_next_byte) (void *),
 command_t
 read_command_stream (command_stream_t s)
 {
+<<<<<<< HEAD
   // TODO: 
   // 1. Check if the command_stream_t s is END or not, if it is, return NULL
   // 2. If the command stream is not END, then process our logic with the stream
@@ -315,6 +317,17 @@ read_command_stream (command_stream_t s)
 	}
   /* printf("command_stream max size: %d.\n", s->max_size); */
   return cmd;
+=======
+  if (s->next == NULL) {
+    // If the command_stream is empty
+    return NULL;
+  }
+  printf("Start reading command stream.....\n");
+  command_stream_t *ps = &s;
+  command_t comm = read_and_or_command(ps);
+  printf("End reading command stream....\n");
+  return comm;
+>>>>>>> be339d4b9fc171123eafa92d8278afed73b51c08
 }
 
 void
@@ -384,6 +397,8 @@ read_and_or_command(command_stream_t* s)
 	*/
 	return 0;
 }
+
+
 command_t 
 read_pipeline_command(command_stream_t* s)
 {
@@ -477,8 +492,10 @@ read_sequence_command(command_stream_t* s)
 command_t 
 read_subshell_command(command_stream_t* s)
 {
-	// same as above
-	return 0;
+  // read the simple command
+  command_t cmd = read_simple_command(s);
+  // TODO: implement subshell command
+	return cmd;
 }
 
 // sub tasks
@@ -489,8 +506,8 @@ make_simple_command(command_stream_t* s)
 	command_t result = (command_t)checked_malloc(sizeof(struct command));
 	result->type = SIMPLE_COMMAND;
 	result->status = -1;
-	result->input = NULL;
-	result->output = NULL;
+	result->input = 0;
+	result->output = 0;
 	
 	// get the word
 	int max_size = INIT_LENGTH;
@@ -536,15 +553,15 @@ make_simple_command(command_stream_t* s)
 			printf("Next token %s\n", (*s)->head);
 	}
 	return result;
-} 
+}
 command_t 
 make_and_command(command_t a1, command_t a2)
 {
 	command_t result = (command_t)checked_malloc(sizeof(struct command));
 	result->type = AND_COMMAND;
 	result->status = -1;
-	result->input = NULL;
-	result->output = NULL;
+	result->input = 0;
+	result->output = 0;
 	
 	result->u.command[0] = a1;
 	result->u.command[1] = a2;
@@ -603,6 +620,27 @@ make_subshell_command(command_t sub)
 	result->u.subshell_command = sub;
 	
 	return result;
+}
+
+enum command_type read_command_type(char *command) {
+  if (strcmp(command, "&&") == 0) {
+    return AND_COMMAND;
+  }
+  else if (strcmp(command, "||") == 0) {
+    return OR_COMMAND;
+  }
+  else if (*command == ';') {
+    return SEQUENCE_COMMAND;
+  }
+  else if (*command ==  '|') {
+    return PIPE_COMMAND;
+  }
+  else if (*command == '(') {
+    // TODO: improve this, dont know how to match subshell correctly
+    return SUBSHELL_COMMAND;
+  }
+
+  return SIMPLE_COMMAND;
 }
 /* END TODO 		 */
 
