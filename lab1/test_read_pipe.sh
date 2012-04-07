@@ -1,1 +1,1 @@
-cat b - | tr A-Z a-z
+cat b - | tr A-Z a-z > c

@@ -253,6 +253,10 @@ make_command_stream (int (*get_next_byte) (void *),
 			printf("%s ", cmd->u.command[0]->u.word[i]);
 			i++;
 		}
+		if (cmd->u.command[0]->input != NULL)
+			printf("< %s", cmd->u.command[0]->input);
+		if (cmd->u.command[0]->output != NULL)
+			printf("> %s", cmd->u.command[0]->output);  
 		printf("| ");
 		i = 0;
 		while(cmd->u.command[1]->u.word[i] != 0)
@@ -260,6 +264,10 @@ make_command_stream (int (*get_next_byte) (void *),
 			printf("%s ", cmd->u.command[1]->u.word[i]);
 			i++;
 		}
+		if (cmd->u.command[1]->input != NULL)
+			printf("< %s", cmd->u.command[1]->input);
+		if (cmd->u.command[1]->output != NULL)
+			printf("> %s", cmd->u.command[1]->output);  
 		printf("\n");
 	}
 	else
@@ -385,6 +393,42 @@ read_simple_command(command_stream_t* s)
   command_t cmd = make_simple_command(s);
   //s = s->next;
   
+
+	command_stream_t tmp = (*s);
+		
+	if(tmp != NULL && strcmp(tmp->head, "<") == 0) // input
+	{
+		//(*s) = (*s)->next;
+		printf("Hit <\n");
+		if(!is_word((*s)->next->head[0])) // after < is not a word
+		{
+			error(1,0, "Syntax error at linenum %i", (*s)->next->line_num);
+		}
+		cmd->input = checked_malloc(2*sizeof(char));
+		strcpy(cmd->input, (*s)->next->head);
+		printf("input =%s\n", cmd->input);
+		if((*s) != NULL)
+			(*s) = (*s)->next;
+		else
+			error(1,0, "Unexpected error");
+		tmp = (*s);
+	}
+	if(tmp != NULL && strcmp(tmp->head, ">") == 0) // output
+	{
+		//(*s) = (*s)->next;
+		if(!is_word((*s)->next->head[0])) // after < is not a word
+		{
+			error(1,0, "Syntax error at linenum %i", (*s)->next->line_num);
+		}
+		cmd->output = checked_malloc(2*sizeof(char));
+		strcpy(cmd->output, (*s)->next->head);
+		printf("output =%s\n", cmd->output);
+		if((*s) != NULL)
+			(*s) = (*s)->next;
+		else
+			error(1,0, "Unexpected error");
+	}
+	
   //Debug
 	/*
 	if((*s) != NULL)
@@ -410,7 +454,7 @@ read_subshell_command(command_stream_t* s)
 
 // sub tasks
 command_t 
-make_simple_command(command_stream_t* s) // This one only pass syntax error NOT TESTED yet, use with your own risk
+make_simple_command(command_stream_t* s) 
 {
 	printf("make_simple_command: next head: %s\n", (*s)->head);
 	command_t result = (command_t)checked_malloc(sizeof(struct command));
@@ -445,7 +489,7 @@ make_simple_command(command_stream_t* s) // This one only pass syntax error NOT 
 		}
 		else // not word, break the loop
 		{		
-			//printf("Not word: Read %s\n", (*s)->head);
+			printf("Not word: Read %s\n", (*s)->head);
 			if(current_pos == max_size) // text too big, need grow in size
 				{
 					max_size = max_size * 2;
@@ -457,6 +501,8 @@ make_simple_command(command_stream_t* s) // This one only pass syntax error NOT 
 		}
 		if((*s) != NULL)
 			(*s) = (*s)->next;
+		else
+			printf("Next token %s\n", (*s)->head);
 	}
 	return result;
 } 

@@ -1,1 +1,5 @@
-cat b - | tr A-Z a-z > c
+true
+
+g++ -c foo.c
+
+: : :
