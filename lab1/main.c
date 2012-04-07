@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 #include "command.h"
+//#include "command-internals.h"
 
 #define debug
 
@@ -62,6 +63,8 @@ main (int argc, char **argv)
     {
       printf ("# %d\n", command_number++);
       print_command (command);
+			if(command_number >= 3)
+				break;
     }
     else
     {

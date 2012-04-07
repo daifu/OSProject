@@ -44,8 +44,12 @@ command_t read_subshell_command(command_stream_t* s);
 /* end function declaration section */
 
 
+
+
 /* debug function */
 void print_cmd_stream(command_stream_t s);
+
+command_stream_t* current;
 
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
@@ -243,7 +247,7 @@ make_command_stream (int (*get_next_byte) (void *),
 	head_stream = head;
 	printf("Head stream is %s\n", head_stream->head);
 	command_t cmd = read_pipeline_command(&head_stream);
-	
+	//printf("Head stream is %s\n", head_stream->head);
 	printf("Full pipe command output: ");
 	i = 0;
 	if(cmd->type == PIPE_COMMAND)
@@ -272,11 +276,15 @@ make_command_stream (int (*get_next_byte) (void *),
 	}
 	else
 	{
-		printf("Something goes wrong\n");
+		printf("DONT have pipeline\n");
 	}
+	head_stream = head;
 #endif
+	//current = &head_stream;
+	current = 0;
   return head_stream;
 }
+
 
 command_t
 read_command_stream (command_stream_t s)
@@ -285,9 +293,28 @@ read_command_stream (command_stream_t s)
   // 1. Check if the command_stream_t s is END or not, if it is, return NULL
   // 2. If the command stream is not END, then process our logic with the stream
   // 3. Return the result
-  //printf("Using the read_command_stream.\n");
+  printf("Using the read_command_stream.\n");
+	if(current != 0)
+		printf("Current: %s\n",(*current)->head);
+	if(s == NULL)
+		return 0;
+	command_t cmd = 0;
+	//printf("Before if\n");
+	if(current == 0)
+	{
+		printf("Current is NULL\n");
+		cmd = read_pipeline_command(&s);
+		printf("Current: %s\n",(*current)->head);
+	}
+	else
+	{
+		printf("Current is not NULL\n");
+		printf("Current: %s\n",(*current)->head);
+		cmd = read_pipeline_command(current);
+		printf("Current: %s\n",(*current)->head);
+	}
   /* printf("command_stream max size: %d.\n", s->max_size); */
-  return 0;
+  return cmd;
 }
 
 void
@@ -372,16 +399,16 @@ read_pipeline_command(command_stream_t* s)
 	// read the pipe symbol and error checking
 	if (strcmp((*s)->head, "|") != 0) // next symbol is not pipe
 	{
-		error(1,0, "Syntax error at linenum %i", (*s)->line_num);
+		//error(1,0, "Read_pipeline_command: Syntax error at linenum %i", (*s)->line_num);
 	}
 	else // read the right pipe and create pipe command
 	{
 		(*s) = (*s)->next;
 		command_t cmd_right = read_simple_command(s); // read the right of the pipe
-		cmd = make_pipe_command(cmd_left, cmd_right); 
+		cmd_left = make_pipe_command(cmd_left, cmd_right); 
 	}
-	
-	return cmd;
+	current = s;
+	return cmd_left;
 }
 command_t 
 read_simple_command(command_stream_t* s)
@@ -402,11 +429,12 @@ read_simple_command(command_stream_t* s)
 		printf("Hit <\n");
 		if(!is_word((*s)->next->head[0])) // after < is not a word
 		{
-			error(1,0, "Syntax error at linenum %i", (*s)->next->line_num);
+			error(1,0, "Read_simple_command:Syntax error at linenum %i", (*s)->next->line_num);
 		}
 		cmd->input = checked_malloc(2*sizeof(char));
 		strcpy(cmd->input, (*s)->next->head);
 		printf("input =%s\n", cmd->input);
+		(*s) = (*s)->next;
 		if((*s) != NULL)
 			(*s) = (*s)->next;
 		else
@@ -418,11 +446,12 @@ read_simple_command(command_stream_t* s)
 		//(*s) = (*s)->next;
 		if(!is_word((*s)->next->head[0])) // after < is not a word
 		{
-			error(1,0, "Syntax error at linenum %i", (*s)->next->line_num);
+			error(1,0, "Read_symbol_command:Syntax error at linenum %i", (*s)->next->line_num);
 		}
 		cmd->output = checked_malloc(2*sizeof(char));
 		strcpy(cmd->output, (*s)->next->head);
 		printf("output =%s\n", cmd->output);
+		(*s) = (*s)->next;
 		if((*s) != NULL)
 			(*s) = (*s)->next;
 		else
@@ -469,7 +498,9 @@ make_simple_command(command_stream_t* s)
 	size_t resize = max_size;
 	
 	result->u.word = (char**)checked_malloc(sizeof(char*) * max_size);
-	while((*s) != NULL)
+
+	int line_num = (*s)->line_num;
+	while((*s) != NULL && line_num == (*s)->line_num)
 	{
 		//printf("s is not NULL\n");
 		char c = (*s)->head[0];
