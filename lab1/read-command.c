@@ -35,15 +35,15 @@ command_t make_subshell_command(command_t sub); // make subshell command
 // TODO: main tasks, do as the TA said in the discussion 
 //			 see more detail in functions implementation below, you can
 //			 change the type and number of argument as necessary
-command_t read_simple_command(command_stream_t *s);
-command_t read_and_or_command(command_stream_t *s);
-command_t read_pipeline_command(command_stream_t *s);
-command_t read_sequence_command(command_stream_t s);
-command_t read_subshell_command(command_stream_t *s);
 
 // helper functions
 enum command_type read_command_type(char *command);
 
+command_t read_simple_command(command_stream_t* s);
+command_t read_and_or_command(command_stream_t* s);
+command_t read_pipeline_command(command_stream_t* s);
+command_t read_sequence_command(command_stream_t* s);
+command_t read_subshell_command(command_stream_t* s);
 /* end function declaration section */
 
 
@@ -236,8 +236,7 @@ make_command_stream (int (*get_next_byte) (void *),
 
 	//printf("Head stream: %s\n", head_stream->head);
 #ifdef debug
-	//print_cmd_stream(head_stream);
-	command_stream_t* curr = NULL;
+	command_stream_t head = head_stream;
 	command_t test = make_simple_command(&head_stream);
 	int i = 0;
 	while(test->u.word[i] != 0)
@@ -246,11 +245,44 @@ make_command_stream (int (*get_next_byte) (void *),
 		i++;
 	}
 	printf("\n");
-	if(curr == NULL)
-		printf("NULL\n");
-	else
-		head_stream = (*curr);
+	
 	printf("Head stream is %s\n", head_stream->head);
+
+	printf("***** TEST read_pipe_commad *****\n");
+	head_stream = head;
+	printf("Head stream is %s\n", head_stream->head);
+	command_t cmd = read_pipeline_command(&head_stream);
+	
+	printf("Full pipe command output: ");
+	i = 0;
+	if(cmd->type == PIPE_COMMAND)
+	{
+		while(cmd->u.command[0]->u.word[i] != 0)
+		{	
+			printf("%s ", cmd->u.command[0]->u.word[i]);
+			i++;
+		}
+		if (cmd->u.command[0]->input != NULL)
+			printf("< %s", cmd->u.command[0]->input);
+		if (cmd->u.command[0]->output != NULL)
+			printf("> %s", cmd->u.command[0]->output);  
+		printf("| ");
+		i = 0;
+		while(cmd->u.command[1]->u.word[i] != 0)
+		{	
+			printf("%s ", cmd->u.command[1]->u.word[i]);
+			i++;
+		}
+		if (cmd->u.command[1]->input != NULL)
+			printf("< %s", cmd->u.command[1]->input);
+		if (cmd->u.command[1]->output != NULL)
+			printf("> %s", cmd->u.command[1]->output);  
+		printf("\n");
+	}
+	else
+	{
+		printf("Something goes wrong\n");
+	}
 #endif
   return head_stream;
 }
@@ -299,7 +331,7 @@ is_comment(char c) // check if char is #
 
 /* TODO TASK HERE */
 command_t
-read_and_or_command(command_stream_t *s)
+read_and_or_command(command_stream_t* s)
 {
 	// this should be the top function to call, the right order may be
 	// read_pipeline()
@@ -324,39 +356,91 @@ read_and_or_command(command_stream_t *s)
     return and_or_cmd;
   }
 	return cmd;
+	return 0;
 }
 
 
 command_t 
-read_pipeline_command(command_stream_t *s)
+read_pipeline_command(command_stream_t* s)
 {
-  // read the subshell command
-  command_t cmd = read_subshell_command(s);
-  if (read_command_type((*s)->head) == PIPE_COMMAND) {
-    // Read the next command
-    (*s) = (*s)->next;
-    command_t next_cmd = read_subshell_command(s);
-    command_t pipe_cmd = make_pipe_command(cmd, next_cmd);
-    return pipe_cmd;
+	// read the subshell command
+	command_t cmd = NULL;
+  //command_t cmd = read_subshell_command(s); // comment for testing, should uncomment it later
+	command_t cmd_left = read_simple_command(s); // read the left of the pipe
+	// read the pipe symbol and error checking
+	if (read_command_type((*s)->head) == PIPE_COMMAND) {
+		(*s) = (*s)->next;
+		command_t cmd_right = read_simple_command(s); // read the right of the pipe
+		cmd = make_pipe_command(cmd_left, cmd_right); 
+	} else {
+    cmd = cmd_left;
   }
+	
 	return cmd;
 }
-command_t
-read_simple_command(command_stream_t *s)
+command_t 
+read_simple_command(command_stream_t* s)
 {
+	// NOT COMPLETE
+	// need to deal with < > simple
 	// this is the lowest lever command
+	printf("read_simple_command: next head: %s\n", (*s)->head);
   command_t cmd = make_simple_command(s);
+  //s = s->next;
+
+	command_stream_t tmp = (*s);
+		
+	if(tmp != NULL && strcmp(tmp->head, "<") == 0) // input
+	{
+		//(*s) = (*s)->next;
+		printf("Hit <\n");
+		if(!is_word((*s)->next->head[0])) // after < is not a word
+		{
+			error(1,0, "Syntax error at linenum %i", (*s)->next->line_num);
+		}
+		cmd->input = checked_malloc(2*sizeof(char));
+		strcpy(cmd->input, (*s)->next->head);
+		printf("input =%s\n", cmd->input);
+		if((*s) != NULL)
+			(*s) = (*s)->next;
+		else
+			error(1,0, "Unexpected error");
+		tmp = (*s);
+	}
+	if(tmp != NULL && strcmp(tmp->head, ">") == 0) // output
+	{
+		//(*s) = (*s)->next;
+		if(!is_word((*s)->next->head[0])) // after < is not a word
+		{
+			error(1,0, "Syntax error at linenum %i", (*s)->next->line_num);
+		}
+		cmd->output = checked_malloc(2*sizeof(char));
+		strcpy(cmd->output, (*s)->next->head);
+		printf("output =%s\n", cmd->output);
+		if((*s) != NULL)
+			(*s) = (*s)->next;
+		else
+			error(1,0, "Unexpected error");
+	}
+	
+  //Debug
+	/*
+	if((*s) != NULL)
+  	printf("read_simple_command: next head: %s\n", (*s)->head);
+	else
+		printf("read_simple_command:NULL\n");
+	*/
 	return cmd;
 }
 
 command_t 
-read_sequence_command(command_stream_t s)
+read_sequence_command(command_stream_t* s)
 {
 	// same as above
 	return 0;
 }
 command_t 
-read_subshell_command(command_stream_t *s)
+read_subshell_command(command_stream_t* s)
 {
   // read the simple command
   command_t cmd = read_simple_command(s);
@@ -416,10 +500,9 @@ make_simple_command(command_stream_t* s) // This one only pass syntax error NOT 
   return result;
 }
 
-  
-  
-  
-command_t 
+
+
+command_t
 make_and_command(command_t a1, command_t a2)
 {
 	command_t result = (command_t)checked_malloc(sizeof(struct command));
