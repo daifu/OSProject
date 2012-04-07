@@ -25,21 +25,21 @@ int is_comment(char); // check if char is #
 int is_white_space(char); // check if white space but NOT new line
 
 // TODO: sub task, should be easy
-command_t make_simple_command(command_stream_t s); // make a simple command from the command stream passed in
-command_t make_and_command(command_t and_cmd, command_t a1, command_t a2); // make and command
-command_t make_or_command(command_t or_cmd, command_t o1, command_t o2); // make or command
-command_t make_pipe_command(command_t pipe_cmd, command_t p1, command_t p2); // make pipeline command
+command_t make_simple_command(command_stream_t* s); // make a simple command from the command stream passed in
+command_t make_and_command(command_t a1, command_t a2); // make and command
+command_t make_or_command(command_t o1, command_t o2); // make or command
+command_t make_pipe_command(command_t p1, command_t p2); // make pipeline command
 command_t make_sequence_command(command_t s1, command_t s2); // make sequence command
 command_t make_subshell_command(command_t sub); // make subshell command 
 
 // TODO: main tasks, do as the TA said in the discussion 
 //			 see more detail in functions implementation below, you can
 //			 change the type and number of argument as necessary
-command_t read_simple_command(command_stream_t s);
-command_t read_and_or_command(command_stream_t s);
-command_t read_pipeline_command(command_stream_t s);
+command_t read_simple_command(command_stream_t *s);
+command_t read_and_or_command(command_stream_t *s);
+command_t read_pipeline_command(command_stream_t *s);
 command_t read_sequence_command(command_stream_t s);
-command_t read_subshell_command(command_stream_t s);
+command_t read_subshell_command(command_stream_t *s);
 
 // helper functions
 enum command_type read_command_type(char *command);
@@ -230,7 +230,8 @@ make_command_stream (int (*get_next_byte) (void *),
 	//printf("Head stream: %s\n", head_stream->head);
 #ifdef debug
 	//print_cmd_stream(head_stream);
-	command_t test = make_simple_command(head_stream);
+	command_stream_t* curr = NULL;
+	command_t test = make_simple_command(&head_stream);
 	int i = 0;
 	while(test->u.word[i] != 0)
 	{
@@ -238,6 +239,11 @@ make_command_stream (int (*get_next_byte) (void *),
 		i++;
 	}
 	printf("\n");
+	if(curr == NULL)
+		printf("NULL\n");
+	else
+		head_stream = (*curr);
+	printf("Head stream is %s\n", head_stream->head);
 #endif
   return head_stream;
 }
@@ -250,7 +256,8 @@ read_command_stream (command_stream_t s)
     return NULL;
   }
   printf("Start reading command stream.....\n");
-  command_t comm = read_and_or_command(s);
+  command_stream_t *ps = &s;
+  command_t comm = read_and_or_command(ps);
   printf("End reading command stream....\n");
   return comm;
 }
@@ -288,7 +295,7 @@ is_comment(char c) // check if char is #
 
 /* TODO TASK HERE */
 command_t
-read_and_or_command(command_stream_t s)
+read_and_or_command(command_stream_t *s)
 {
 	// this should be the top function to call, the right order may be
 	// read_pipeline()
@@ -297,19 +304,19 @@ read_and_or_command(command_stream_t s)
 	// return
   // 1. read the pipeline command until && or || or end
   command_t cmd = read_pipeline_command(s);
-  s = s->next;
+  (*s) = (*s)->next;
   //Debug
-  printf("read_and_or_command: next head: %s\n", s->head);
-  while (strcmp(s->head, "&&") == 0 || strcmp(s->head, "||") == 0) {
+  printf("read_and_or_command: next head: %s\n", (*s)->head);
+  while (strcmp((*s)->head, "&&") == 0 || strcmp((*s)->head, "||") == 0) {
     // 2. If the next command is && or ||, then make and_or command
     // Read the next command
-    command_t next_cmd = read_pipeline_command(s->next);
-    enum command_type cmd_type = read_command_type(s->head);
-    command_t and_or_cmd = checked_malloc(sizeof(struct command));
+    command_t next_cmd = read_pipeline_command(&(*s)->next);
+    enum command_type cmd_type = read_command_type((*s)->head);
+    command_t and_or_cmd;
     if (cmd_type == AND_COMMAND) {
-      make_and_command(and_or_cmd, cmd, next_cmd);
+      and_or_cmd = make_and_command(cmd, next_cmd);
     } else {
-      make_or_command(and_or_cmd, cmd, next_cmd);
+      and_or_cmd = make_or_command(cmd, next_cmd);
     }
     printf("Command Type: %d\n", and_or_cmd->type);
     cmd = and_or_cmd;
@@ -320,29 +327,28 @@ read_and_or_command(command_stream_t s)
 
 
 command_t 
-read_pipeline_command(command_stream_t s)
+read_pipeline_command(command_stream_t *s)
 {
   // read the subshell command
   command_t cmd = read_subshell_command(s);
-  s = s->next;
   // Debug
-  printf("read_pipeline_command: next head: %s\n", s->head);
-  while (read_command_type(s->head) == PIPE_COMMAND) {
+  printf("read_pipeline_command: next head: %s\n", (*s)->head);
+  if (read_command_type((*s)->head) == PIPE_COMMAND) {
     // Read the next command
-    command_t next_cmd = read_subshell_command(s->next);
+    command_t next_cmd = read_subshell_command(&((*s)->next));
     // Debug
-    printf("read_pipeline_command: next head: %s\n", s->head);
+    printf("read_pipeline_command: next head: %s\n", (*s)->head);
 
-    command_t pipe_cmd = checked_malloc(sizeof(struct command));
-    make_pipe_command(pipe_cmd, cmd, next_cmd);
+    command_t pipe_cmd = make_pipe_command(cmd, next_cmd);
     cmd = pipe_cmd;
   }
 	return cmd;
 }
 command_t
-read_simple_command(command_stream_t s)
+read_simple_command(command_stream_t *s)
 {
 	// this is the lowest lever command
+  printf("Comming to read_simple_command\n");
   command_t cmd = make_simple_command(s);
   //Debug
   printf("read_simple_command: next words: %s\n", (cmd->u.word)[0]);
@@ -356,7 +362,7 @@ read_sequence_command(command_stream_t s)
 	return 0;
 }
 command_t 
-read_subshell_command(command_stream_t s)
+read_subshell_command(command_stream_t *s)
 {
   // read the simple command
   command_t cmd = read_simple_command(s);
@@ -365,8 +371,8 @@ read_subshell_command(command_stream_t s)
 }
 
 // sub tasks
-command_t
-make_simple_command(command_stream_t s) // This one only pass syntax error NOT TESTED yet, use with your own risk
+command_t 
+make_simple_command(command_stream_t* s) // This one only pass syntax error NOT TESTED yet, use with your own risk
 {
 	command_t result = (command_t)checked_malloc(sizeof(struct command));
 	result->type = SIMPLE_COMMAND;
@@ -380,27 +386,27 @@ make_simple_command(command_stream_t s) // This one only pass syntax error NOT T
 	size_t resize = max_size;
 	
 	result->u.word = (char**)checked_malloc(sizeof(char*) * max_size);
-	while(s != NULL)
+	while((*s) != NULL)
 	{
 		//printf("s is not NULL\n");
-		char c = s->head[0];
+		char c = (*s)->head[0];
 		if(is_word(c))
 		{
-			printf("Read %s\n", s->head);
+			//printf("Read %s\n", s->head);
 			if(current_pos == max_size) // text too big, need grow in size
 				{
 					max_size = max_size * 2;
 					resize = max_size *sizeof(char);
 					result->u.word = checked_grow_alloc(result->u.word, &resize);
 				}
-			result->u.word[current_pos] = (char*)checked_malloc(s->token_size * sizeof(char));
-			result->u.word[current_pos] = memcpy(result->u.word[current_pos], s->head, s->token_size);
+			result->u.word[current_pos] = (char*)checked_malloc((*s)->token_size * sizeof(char));
+			result->u.word[current_pos] = memcpy(result->u.word[current_pos], (*s)->head, (*s)->token_size);
 			current_pos++;
-			printf("Word after copied %s\n",result->u.word[current_pos-1]);
+			//printf("Word after copied %s\n",result->u.word[current_pos-1]);
 		}
 		else // not word, break the loop
 		{
-			printf("Read %s\n", s->head);
+			//printf("Read %s\n", s->head);
 			if(current_pos == max_size) // text too big, need grow in size
 				{
 					max_size = max_size * 2;
@@ -410,66 +416,92 @@ make_simple_command(command_stream_t s) // This one only pass syntax error NOT T
 			result->u.word[current_pos] = 0;
 			break;
 		}
-		s = s->next;
+		(*s) = (*s)->next;
 	}
+	printf("s is %s\n", (*s)->head);
+	//current_point = &s; // save the current position of pointer
 	printf("Return OK\n");
 	return result;
 }
 command_t 
-make_and_command(command_t and_cmd, command_t a1, command_t a2)
+make_and_command(command_t a1, command_t a2)
 {
-  and_cmd->type = AND_COMMAND;
-  and_cmd->status = -1;
-  and_cmd->input = 0;
-  and_cmd->output = 0;
-  and_cmd->u.command[0] = a1;
-  and_cmd->u.command[1] = a2;
-	return 0;
+	command_t result = (command_t)checked_malloc(sizeof(struct command));
+	result->type = AND_COMMAND;
+	result->status = -1;
+	result->input = 0;
+	result->output = 0;
+	
+	result->u.command[0] = a1;
+	result->u.command[1] = a2;
+	
+	return result;
 }
 command_t 
-make_or_command(command_t or_cmd, command_t o1, command_t o2)
+make_or_command(command_t o1, command_t o2)
 {
-  or_cmd->type = OR_COMMAND;
-  or_cmd->status = -1;
-  or_cmd->input = 0;
-  or_cmd->output = 0;
-  or_cmd->u.command[0] = o1;
-  or_cmd->u.command[1] = o2;
-	return 0;
+	command_t result = (command_t)checked_malloc(sizeof(struct command));
+	result->type = OR_COMMAND;
+	result->status = -1;
+	result->input = NULL;
+	result->output = NULL;
+	
+	result->u.command[0] = o1;
+	result->u.command[1] = o2;
+	return result;
 }
 command_t 
-make_pipe_command(command_t pipe_cmd, command_t p1, command_t p2)
+make_pipe_command(command_t p1, command_t p2)
 {
-  pipe_cmd->type = PIPE_COMMAND;
-  pipe_cmd->status = -1;
-  pipe_cmd->input = 0;
-  pipe_cmd->output = 0;
-  pipe_cmd->u.command[0] = p1;
-  pipe_cmd->u.command[1] = p2;
-	return 0;
+	command_t result = (command_t)checked_malloc(sizeof(struct command));
+	result->type = PIPE_COMMAND;
+	result->status = -1;
+	result->input = NULL;
+	result->output = NULL;
+	
+	result->u.command[0] = p1;
+	result->u.command[1] = p2;
+	return result;
 }
 command_t 
 make_sequence_command(command_t s1, command_t s2)
 {
-	return 0;
+	command_t result = (command_t)checked_malloc(sizeof(struct command));
+	result->type = SEQUENCE_COMMAND;
+	result->status = -1;
+	result->input = NULL;
+	result->output = NULL;
+	
+	result->u.command[0] = s1;
+	result->u.command[1] = s2;
+
+	return result;
 }
 command_t 
 make_subshell_command(command_t sub)
 {
-	return 0;
+	command_t result = (command_t)checked_malloc(sizeof(struct command));
+	result->type = AND_COMMAND;
+	result->status = -1;
+	result->input = NULL;
+	result->output = NULL;
+	
+	result->u.subshell_command = sub;
+	
+	return result;
 }
 
 enum command_type read_command_type(char *command) {
-  if (strcmp(command, "&&")) {
+  if (strcmp(command, "&&") == 0) {
     return AND_COMMAND;
   }
-  else if (strcmp(command, "||")) {
+  else if (strcmp(command, "||") == 0) {
     return OR_COMMAND;
   }
-  else if (strcmp(command, ";")) {
+  else if (*command == ';') {
     return SEQUENCE_COMMAND;
   }
-  else if (strcmp(command, "|")) {
+  else if (*command ==  '|') {
     return PIPE_COMMAND;
   }
   else if (*command == '(') {
