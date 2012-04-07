@@ -374,27 +374,69 @@ make_simple_command(command_stream_t s) // This one only pass syntax error NOT T
 command_t 
 make_and_command(command_t a1, command_t a2)
 {
-	return 0;
+	command_t result = (command_t)checked_malloc(sizeof(struct command));
+	result->type = AND_COMMAND;
+	result->status = -1;
+	result->input = NULL;
+	result->output = NULL;
+	
+	result->u.command[0] = a1;
+	result->u.command[1] = a2;
+	
+	return result;
 }
 command_t 
 make_or_command(command_t o1, command_t o2)
 {
-	return 0;
+	command_t result = (command_t)checked_malloc(sizeof(struct command));
+	result->type = OR_COMMAND;
+	result->status = -1;
+	result->input = NULL;
+	result->output = NULL;
+	
+	result->u.command[0] = o1;
+	result->u.command[1] = o2;
+	return result;
 }
 command_t 
 make_pipe_command(command_t p1, command_t p2)
 {
-	return 0;
+	command_t result = (command_t)checked_malloc(sizeof(struct command));
+	result->type = PIPE_COMMAND;
+	result->status = -1;
+	result->input = NULL;
+	result->output = NULL;
+	
+	result->u.command[0] = p1;
+	result->u.command[1] = p2;
+	return result;
 }
 command_t 
 make_sequence_command(command_t s1, command_t s2)
 {
-	return 0;
+	command_t result = (command_t)checked_malloc(sizeof(struct command));
+	result->type = SEQUENCE_COMMAND;
+	result->status = -1;
+	result->input = NULL;
+	result->output = NULL;
+	
+	result->u.command[0] = s1;
+	result->u.command[1] = s2;
+
+	return result;
 }
 command_t 
 make_subshell_command(command_t sub)
 {
-	return 0;
+	command_t result = (command_t)checked_malloc(sizeof(struct command));
+	result->type = AND_COMMAND;
+	result->status = -1;
+	result->input = NULL;
+	result->output = NULL;
+	
+	result->u.subshell_command = sub;
+	
+	return result;
 }
 /* END TODO 		 */
 
