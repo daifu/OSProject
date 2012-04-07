@@ -12,20 +12,22 @@
 #include <ctype.h>
 #include <string.h>
 
-/* #define debug false */
+#define debug
+
+typedef struct c_stream *c_stream_t;
 
 /* constant definition */
 #define INIT_LENGTH 4
 
 /* function declaration */
-void init_command_stream(command_stream_t new_stream); // initialize an empty command stream
+void init_c_stream(c_stream_t new_stream); // initialize an empty command stream
 int is_word(char c); // check if a character is a word (word definition is in the lab manual)
 int is_special_token(char); // check if a character is a special character (8 tokens in the lab manual)
 int is_comment(char); // check if char is #
 int is_white_space(char); // check if white space but NOT new line
 
 // TODO: sub task, should be easy
-command_t make_simple_command(command_stream_t* s); // make a simple command from the command stream passed in
+command_t make_simple_command(c_stream_t* s); // make a simple command from the command stream passed in
 command_t make_and_command(command_t a1, command_t a2); // make and command
 command_t make_or_command(command_t o1, command_t o2); // make or command
 command_t make_pipe_command(command_t p1, command_t p2); // make pipeline command
@@ -35,34 +37,37 @@ command_t make_subshell_command(command_t sub); // make subshell command
 // TODO: main tasks, do as the TA said in the discussion 
 //			 see more detail in functions implementation below, you can
 //			 change the type and number of argument as necessary
-// helper functions
-enum command_type read_command_type(char *command);
-
-command_t read_simple_command(command_stream_t* s);
-command_t read_and_or_command(command_stream_t* s);
-command_t read_pipeline_command(command_stream_t* s);
-command_t read_sequence_command(command_stream_t* s);
-command_t read_subshell_command(command_stream_t* s);
+command_t read_simple_command(c_stream_t* s);
+command_t read_and_or_command(c_stream_t* s);
+command_t read_pipeline_command(c_stream_t* s);
+command_t read_sequence_command(c_stream_t* s);
+command_t read_subshell_command(c_stream_t* s);
+ 
 /* end function declaration section */
 
 
+
+
 /* debug function */
-void print_cmd_stream(command_stream_t s);
+void print_cmd_stream(c_stream_t s);
+
+c_stream_t* current;
 
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
 		     void *get_next_byte_argument)
 {
-  // 1. create a command_stream object using alloc
+  // TODO:
+  // 1. create a c_stream object using alloc
   // 2. populate the object based on the get_next_byte(get_next_byte_argument)
   // 3. store a command line until \n
   // 4. keep track of the number of lines while looping trough the file_stream
   // 5. Ignored the comments and the empty lines
-	command_stream_t head_stream = NULL;
-	command_stream_t tail_stream = NULL;
-  command_stream_t new_stream; 
-	//checked_malloc(sizeof(struct command_stream));
-  //init_command_stream(new_stream);
+	c_stream_t head_stream = NULL;
+	c_stream_t tail_stream = NULL;
+  c_stream_t new_stream; 
+	//checked_malloc(sizeof(struct c_stream));
+  //init_c_stream(new_stream);
 
 
   int line_num = 1;
@@ -91,8 +96,8 @@ make_command_stream (int (*get_next_byte) (void *),
 		// printf("Reading %c\n", c);
 		if (is_word(c))
 		{	
-			new_stream = checked_malloc(sizeof(struct command_stream));
-  		init_command_stream(new_stream);
+			new_stream = checked_malloc(sizeof(struct c_stream));
+  		init_c_stream(new_stream);
 			while(is_word(c))
 			{
 				if(current_pos == max_size) // text too big, need grow in size
@@ -122,7 +127,7 @@ make_command_stream (int (*get_next_byte) (void *),
 			}
 			
 #ifdef debug
-			/* printf("New stream's text: %s\n", new_stream->head); */
+			//printf("New stream's text: %s\n", new_stream->head);
 #endif
 			// reverse len and position
 			max_size = INIT_LENGTH;
@@ -130,8 +135,8 @@ make_command_stream (int (*get_next_byte) (void *),
 		}
 		else if(is_special_token(c)) // deal with special token
 		{
-			new_stream = checked_malloc(sizeof(struct command_stream));
-  		init_command_stream(new_stream);
+			new_stream = checked_malloc(sizeof(struct c_stream));
+  		init_c_stream(new_stream);
 			if(current_pos == max_size) // text too big, need grow in size
 			{
 				max_size = max_size * 2;
@@ -228,7 +233,7 @@ make_command_stream (int (*get_next_byte) (void *),
 
 	//printf("Head stream: %s\n", head_stream->head);
 #ifdef debug
-	command_stream_t head = head_stream;
+	c_stream_t head = head_stream;
 	command_t test = make_simple_command(&head_stream);
 	int i = 0;
 	while(test->u.word[i] != 0)
@@ -244,7 +249,7 @@ make_command_stream (int (*get_next_byte) (void *),
 	head_stream = head;
 	printf("Head stream is %s\n", head_stream->head);
 	command_t cmd = read_pipeline_command(&head_stream);
-	
+	//printf("Head stream is %s\n", head_stream->head);
 	printf("Full pipe command output: ");
 	i = 0;
 	if(cmd->type == PIPE_COMMAND)
@@ -273,28 +278,46 @@ make_command_stream (int (*get_next_byte) (void *),
 	}
 	else
 	{
-		printf("Something goes wrong\n");
+		printf("DONT have pipeline\n");
 	}
+	head_stream = head;
 #endif
-  return head_stream;
+	//current = &head_stream;
+	//current = 0;
+	command_stream_t result = checked_malloc(sizeof(struct command_stream));
+	result->s = head_stream;
+	//command_stream_t result = &st;
+  return result;
 }
+
 
 command_t
 read_command_stream (command_stream_t s)
 {
-  if (s->next == NULL) {
-    // If the command_stream is empty
-    return NULL;
-  }
-  printf("Start reading command stream.....\n");
-  command_stream_t *ps = &s;
-  command_t comm = read_and_or_command(ps);
-  printf("End reading command stream....\n");
-  return comm;
+  // TODO: 
+  // 1. Check if the c_stream_t s is END or not, if it is, return NULL
+  // 2. If the command stream is not END, then process our logic with the stream
+  // 3. Return the result
+  printf("Using the read_c_stream.\n");
+	if(s->s == NULL)
+	{
+		printf("NULL\n");
+		return 0;
+	}
+	command_t cmd;
+	
+	cmd = read_pipeline_command(&(s->s));
+  /* printf("c_stream max size: %d.\n", s->max_size); */
+	if(s == NULL)
+	{	
+		printf("NULL\n");
+		cmd = 0;
+	}
+  return cmd;
 }
 
 void
-init_command_stream(command_stream_t new_stream)
+init_c_stream(c_stream_t new_stream)
 {
   new_stream->head = (char*)checked_malloc(INIT_LENGTH * sizeof(char));
   new_stream->line_num = 0;
@@ -326,7 +349,7 @@ is_comment(char c) // check if char is #
 
 /* TODO TASK HERE */
 command_t 
-read_and_or_command(command_stream_t* s)
+read_and_or_command(c_stream_t* s)
 {
 	// TODO
 	// this should be the top function to call, the right order may be
@@ -360,10 +383,8 @@ read_and_or_command(command_stream_t* s)
 	*/
 	return 0;
 }
-
-
 command_t 
-read_pipeline_command(command_stream_t* s)
+read_pipeline_command(c_stream_t* s)
 {
 	// read the subshell command
 	command_t cmd = NULL;
@@ -372,24 +393,29 @@ read_pipeline_command(command_stream_t* s)
   //(*s) = (*s)->next;
   // Debug
 #ifdef debug
-  printf("read_pipeline_command: next head: %s\n", (*s)->head);
+	if((*s) != NULL)
+  	printf("read_pipeline_command: next head: %s\n", (*s)->head);
 #endif
-	// read the pipe symbol and error checking
-	if (strcmp((*s)->head, "|") != 0) // next symbol is not pipe
+	if((*s) != NULL)
 	{
-		error(1,0, "Syntax error at linenum %i", (*s)->line_num);
+		// read the pipe symbol and error checking
+		if (strcmp((*s)->head, "|") != 0) // next symbol is not pipe
+		{
+			//error(1,0, "Read_pipeline_command: Syntax error at linenum %i", (*s)->line_num);
+		}
+		else // read the right pipe and create pipe command
+		{
+			(*s) = (*s)->next;
+			command_t cmd_right = read_simple_command(s); // read the right of the pipe
+			cmd_left = make_pipe_command(cmd_left, cmd_right); 
+		}
 	}
-	else // read the right pipe and create pipe command
-	{
-		(*s) = (*s)->next;
-		command_t cmd_right = read_simple_command(s); // read the right of the pipe
-		cmd = make_pipe_command(cmd_left, cmd_right); 
-	}
-	
-	return cmd;
+	//current = s;
+	printf("OUT\n");
+	return cmd_left;
 }
 command_t 
-read_simple_command(command_stream_t* s)
+read_simple_command(c_stream_t* s)
 {
 	// NOT COMPLETE
 	// need to deal with < > simple
@@ -398,8 +424,8 @@ read_simple_command(command_stream_t* s)
   command_t cmd = make_simple_command(s);
   //s = s->next;
   
-
-	command_stream_t tmp = (*s);
+	
+	c_stream_t tmp = (*s);
 		
 	if(tmp != NULL && strcmp(tmp->head, "<") == 0) // input
 	{
@@ -407,11 +433,12 @@ read_simple_command(command_stream_t* s)
 		printf("Hit <\n");
 		if(!is_word((*s)->next->head[0])) // after < is not a word
 		{
-			error(1,0, "Syntax error at linenum %i", (*s)->next->line_num);
+			error(1,0, "Read_simple_command:Syntax error at linenum %i", (*s)->next->line_num);
 		}
 		cmd->input = checked_malloc(2*sizeof(char));
 		strcpy(cmd->input, (*s)->next->head);
 		printf("input =%s\n", cmd->input);
+		(*s) = (*s)->next;
 		if((*s) != NULL)
 			(*s) = (*s)->next;
 		else
@@ -423,11 +450,12 @@ read_simple_command(command_stream_t* s)
 		//(*s) = (*s)->next;
 		if(!is_word((*s)->next->head[0])) // after < is not a word
 		{
-			error(1,0, "Syntax error at linenum %i", (*s)->next->line_num);
+			error(1,0, "Read_symbol_command:Syntax error at linenum %i", (*s)->next->line_num);
 		}
 		cmd->output = checked_malloc(2*sizeof(char));
 		strcpy(cmd->output, (*s)->next->head);
 		printf("output =%s\n", cmd->output);
+		(*s) = (*s)->next;
 		if((*s) != NULL)
 			(*s) = (*s)->next;
 		else
@@ -445,30 +473,28 @@ read_simple_command(command_stream_t* s)
 }
 
 command_t 
-read_sequence_command(command_stream_t* s)
+read_sequence_command(c_stream_t* s)
 {
 	// same as above
 	return 0;
 }
 command_t 
-read_subshell_command(command_stream_t* s)
+read_subshell_command(c_stream_t* s)
 {
-  // read the simple command
-  command_t cmd = read_simple_command(s);
-  // TODO: implement subshell command
-	return cmd;
+	// same as above
+	return 0;
 }
 
 // sub tasks
 command_t 
-make_simple_command(command_stream_t* s) 
+make_simple_command(c_stream_t* s) 
 {
 	printf("make_simple_command: next head: %s\n", (*s)->head);
 	command_t result = (command_t)checked_malloc(sizeof(struct command));
 	result->type = SIMPLE_COMMAND;
 	result->status = -1;
-	result->input = 0;
-	result->output = 0;
+	result->input = NULL;
+	result->output = NULL;
 	
 	// get the word
 	int max_size = INIT_LENGTH;
@@ -476,13 +502,15 @@ make_simple_command(command_stream_t* s)
 	size_t resize = max_size;
 	
 	result->u.word = (char**)checked_malloc(sizeof(char*) * max_size);
-	while((*s) != NULL)
+
+	int line_num = (*s)->line_num;
+	while((*s) != NULL && line_num == (*s)->line_num)
 	{
 		//printf("s is not NULL\n");
 		char c = (*s)->head[0];
 		if(is_word(c))
 		{
-			//printf("Read %s\n", (*s)->head);
+			printf("Read %s\n", (*s)->head);
 			if(current_pos == max_size) // text too big, need grow in size
 				{
 					max_size = max_size * 2;
@@ -512,15 +540,15 @@ make_simple_command(command_stream_t* s)
 			printf("Next token %s\n", (*s)->head);
 	}
 	return result;
-}
+} 
 command_t 
 make_and_command(command_t a1, command_t a2)
 {
 	command_t result = (command_t)checked_malloc(sizeof(struct command));
 	result->type = AND_COMMAND;
 	result->status = -1;
-	result->input = 0;
-	result->output = 0;
+	result->input = NULL;
+	result->output = NULL;
 	
 	result->u.command[0] = a1;
 	result->u.command[1] = a2;
@@ -580,32 +608,11 @@ make_subshell_command(command_t sub)
 	
 	return result;
 }
-
-enum command_type read_command_type(char *command) {
-  if (strcmp(command, "&&") == 0) {
-    return AND_COMMAND;
-  }
-  else if (strcmp(command, "||") == 0) {
-    return OR_COMMAND;
-  }
-  else if (*command == ';') {
-    return SEQUENCE_COMMAND;
-  }
-  else if (*command ==  '|') {
-    return PIPE_COMMAND;
-  }
-  else if (*command == '(') {
-    // TODO: improve this, dont know how to match subshell correctly
-    return SUBSHELL_COMMAND;
-  }
-
-  return SIMPLE_COMMAND;
-}
 /* END TODO 		 */
 
 
 /* debug function */
-void print_cmd_stream(command_stream_t s)
+void print_cmd_stream(c_stream_t s)
 {
 	int line_num = 1;
 	while (s != NULL)
