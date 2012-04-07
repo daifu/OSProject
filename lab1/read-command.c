@@ -344,13 +344,8 @@ read_simple_command(command_stream_t s)
 {
 	// this is the lowest lever command
   command_t cmd = make_simple_command(s);
-  s = s->next;
-  while(read_command_type(s->head) == SIMPLE_COMMAND) {
-    command_t next_cmd = read_simple_command(s);
-    cmd = next_cmd;
-  }
   //Debug
-  printf("read_simple_command: next head: %s\n", s->head);
+  printf("read_simple_command: next words: %s\n", (cmd->u.word)[0]);
 	return cmd;
 }
 
@@ -419,7 +414,7 @@ make_simple_command(command_stream_t s) // This one only pass syntax error NOT T
 	}
 	printf("Return OK\n");
 	return result;
-} 
+}
 command_t 
 make_and_command(command_t and_cmd, command_t a1, command_t a2)
 {
