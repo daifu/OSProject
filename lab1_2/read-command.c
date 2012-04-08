@@ -150,10 +150,8 @@ make_command_stream (int (*get_next_byte) (void *),
 			//c = get_next_byte(get_next_byte_argument);
 			if(c == '&')
 			{
-				printf("Read %c\n",c);
 				// read next char, if not another &, output error
 				c = get_next_byte(get_next_byte_argument);
-				printf("Next char %c\n",c);
 				if(c != '&')
 				{
 					error(1,0, "Syntax error, missing & at linenum %i",line_num);
@@ -170,10 +168,8 @@ make_command_stream (int (*get_next_byte) (void *),
 			}
 			else if(c == '|')
 			{
-				printf("Read %c\n",c);
 				// read next char, if not another | or not a word, output error
 				c = get_next_byte(get_next_byte_argument);
-				printf("Next char %c\n",c);
 				if(c != '|' && c != ' ' && c != '\n' && c != '\t' && !is_word(c))
 				{
 					error(1,0, "Syntax error, | at linenum %i",line_num);
@@ -192,7 +188,7 @@ make_command_stream (int (*get_next_byte) (void *),
 			{
 				// read next char, if not a word, output error
 				c = get_next_byte(get_next_byte_argument);
-				if(c != ' ' && c != '\n' && c != '\t' && !is_word(c))
+				if(c != ' ' && c != '\n' && c != '\t' && c != ')' && c != '(' && !is_word(c))
 				{
 					error(1,0, "Syntax error, special char %c follow by unrecognized symbol at linenum %i", c,  line_num);
 					//c = get_next_byte(get_next_byte_argument);
@@ -258,7 +254,8 @@ read_command_stream (command_stream_t s)
 	}
 	command_t cmd;
 	
-	cmd = read_and_or_command(&(s->s));
+	//cmd = read_and_or_command(&(s->s));
+	cmd = read_sequence_command(&(s->s));
   /* printf("c_stream max size: %d.\n", s->max_size); */
 	if(s == NULL)
 	{	
@@ -303,8 +300,12 @@ is_comment(char c) // check if char is #
 command_t 
 read_and_or_command(c_stream_t* s)
 {
+	command_t cmd = NULL;
 	// 1. read the pipeline command until && or || or end
-  command_t cmd = read_pipeline_command(s);
+	if ((*s) != NULL && (strcmp((*s)->head, "(") != 0)) // not subshell 
+  	cmd = read_pipeline_command(s);
+	else if ((*s) != NULL && (strcmp((*s)->head, "(") == 0)) // subshell
+		cmd = read_subshell_command(s);
   //Debug
   int is_and_or_cmd = 100;
 	if ((*s) != NULL) 
@@ -361,14 +362,9 @@ read_pipeline_command(c_stream_t* s)
 command_t 
 read_simple_command(c_stream_t* s)
 {
-	// NOT COMPLETE
-	// need to deal with < > simple
-	// this is the lowest lever command
-	//printf("read_simple_command: next head: %s\n", (*s)->head);
   command_t cmd = make_simple_command(s);
   //s = s->next;
   
-	
 	c_stream_t tmp = (*s);
 		
 	if(tmp != NULL && strcmp(tmp->head, "<") == 0) // input
@@ -418,14 +414,72 @@ read_simple_command(c_stream_t* s)
 command_t 
 read_sequence_command(c_stream_t* s)
 {
-	// same as above
-	return 0;
+	command_t cmd = NULL;
+	command_t cmd_left = NULL;
+	if ((*s) != NULL && (strcmp((*s)->head, "(") != 0)) // not subshell 
+  	cmd_left = read_and_or_command(s); // read the left 
+	else if ((*s) != NULL && (strcmp((*s)->head, "(") == 0)) // subshell
+		cmd_left = read_subshell_command(s);
+	//command_t cmd_left = read_and_or_command(s); // read the left of the pipe
+  
+#ifdef debug
+	if((*s) != NULL)
+  	printf("read_sequence_command: next head: %s\n", (*s)->head);
+#endif
+	if((*s) != NULL)
+	{
+		// read the pipe symbol and error checking
+		if (strcmp((*s)->head, ";") != 0) // next symbol is not pipe
+		{
+			//error(1,0, "Read_pipeline_command: Syntax error at linenum %i", (*s)->line_num);
+			if(strcmp((*s)->head,")") == 0) // next token is not )
+			{
+			}
+		}
+		else // read the right pipe and create pipe command
+		{
+			(*s) = (*s)->next;
+			if(strcmp((*s)->head,")") != 0) // next token is not )
+			{
+				command_t cmd_right = read_sequence_command(s); // read the right of the pipe
+				//if (cmd_right != NULL)
+				cmd_left = make_sequence_command(cmd_left, cmd_right); 
+			}
+		}
+	}
+
+	return cmd_left;
 }
 command_t 
 read_subshell_command(c_stream_t* s)
 {
-	// same as above
-	return 0;
+#ifdef debug
+	if((*s) != NULL)
+  	printf("read_subshell_command: next head: %s\n", (*s)->head);
+#endif
+	if ((*s) == NULL || (strcmp((*s)->head, "(") != 0)) // not start with '(', error
+	{
+		error(1, 0, "%d: Expect (", (*s)->line_num);
+	} 
+	command_t cmd = NULL;
+	(*s) = (*s)->next;
+	cmd = read_sequence_command(s); 
+  
+	if ((*s) == NULL || (strcmp((*s)->head, ")") != 0)) // not start with '(', error
+	{
+		error(1, 0, "%d: Expect )", (*s)->line_num);
+	}
+	(*s) = (*s)->next;
+	
+#ifdef debug
+	if((*s) != NULL)
+		printf("s is %s\n", (*s)->head);
+	else
+		printf("s is NULL]n");
+#endif
+	cmd = make_subshell_command(cmd); 
+
+	return cmd;
 }
 
 // sub tasks
@@ -542,7 +596,7 @@ command_t
 make_subshell_command(command_t sub)
 {
 	command_t result = (command_t)checked_malloc(sizeof(struct command));
-	result->type = AND_COMMAND;
+	result->type = SUBSHELL_COMMAND;
 	result->status = -1;
 	result->input = NULL;
 	result->output = NULL;
@@ -562,13 +616,13 @@ enum command_type read_command_type(char *command) {
   else if (strcmp(command, "||") == 0) {
     return OR_COMMAND;
   }
-  else if (*command == ';') {
+  else if (strcmp(command, ";") == 0) {
     return SEQUENCE_COMMAND;
   }
-  else if (*command == '|') {
+  else if (strcmp(command, "|") == 0) {
     return PIPE_COMMAND;
   }
-  else if (*command == '(') {
+  else if (strcmp(command, "(") == 0) {
     // TODO: improve this, dont know how to match subshell correctly
     return SUBSHELL_COMMAND;
   }
