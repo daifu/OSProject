@@ -1,2 +1,2 @@
-(cat -b && a ; diff a | b;)  sort -c >d
+(cat -b | diff a | b < d;) sort -c >d
 cat a

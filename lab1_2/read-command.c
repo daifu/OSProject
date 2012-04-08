@@ -339,8 +339,8 @@ read_pipeline_command(c_stream_t* s)
   //(*s) = (*s)->next;
   // Debug
 #ifdef debug
-	//if((*s) != NULL)
-  //	printf("read_pipeline_command: next head: %s\n", (*s)->head);
+	if((*s) != NULL)
+  	printf("read_pipeline_command: next head: %s\n", (*s)->head);
 #endif
 	if((*s) != NULL)
 	{
@@ -400,14 +400,6 @@ read_simple_command(c_stream_t* s)
 		else
 			error(1,0, "Unexpected error");
 	}
-	
-  //Debug
-	/*
-	if((*s) != NULL)
-  	printf("read_simple_command: next head: %s\n", (*s)->head);
-	else
-		printf("read_simple_command:NULL\n");
-	*/
 	return cmd;
 }
 
@@ -477,7 +469,10 @@ read_subshell_command(c_stream_t* s)
 	else
 		printf("s is NULL]n");
 #endif
+
 	cmd = make_subshell_command(cmd); 
+	
+	
 
 	return cmd;
 }
