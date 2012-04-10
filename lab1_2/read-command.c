@@ -253,7 +253,7 @@ make_command_stream (int (*get_next_byte) (void *),
 				while (c != '\n')
 					c = get_next_byte(get_next_byte_argument);
 			}
-			if(!is_word(c) && c != ':' && c != EOF)
+			if(!is_word(c) && c != ':' && c != EOF && c != '\n')
 				error(1,0, "%i: Unexpedted beginning word", line_num);
 		}
 		else if (!is_word(c) && !is_special_token(c) && c != ' ' && c != '\n' && c != '\t' && c != EOF)
