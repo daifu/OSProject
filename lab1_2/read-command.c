@@ -71,12 +71,14 @@ make_command_stream (int (*get_next_byte) (void *),
 	//checked_malloc(sizeof(struct c_stream));
   //init_c_stream(new_stream);
 
-
+	int count_bracket = 0;
+	int is_close = 0;
   int line_num = 1;
   char c = get_next_byte(get_next_byte_argument);
   
 	// first word is not a word or :, output error
-	if(!is_word(c) || c != ':' || c != '(')
+	//printf("First word %c\n", c);
+	if(!is_word(c) && c != ':' && c != '(' && c!= '\t' && c != '\n' && c != ' ')
 		error(1,0, "%i:unexpected first word",line_num);
 	//printf("c is %c\n", c);
   while (c != EOF)
@@ -150,7 +152,7 @@ make_command_stream (int (*get_next_byte) (void *),
 			}
 			new_stream->head[current_pos] = c;
 			current_pos++;
-			//c = get_next_byte(get_next_byte_argument);
+			
 			if(c == '&')
 			{
 				// read next char, if not another &, output error
@@ -184,8 +186,24 @@ make_command_stream (int (*get_next_byte) (void *),
 					//c = get_next_byte(get_next_byte_argument);
 					new_stream->head[current_pos] = c;
 					current_pos++;
-					c = get_next_byte(get_next_byte_argument); 
+					c = get_next_byte(get_next_byte_argument);
+					if(c == '|') // triple |||
+						 error(1,0, "%i: syntax error",line_num);
 				}
+			}
+			else if (c == '(')
+			{
+				count_bracket++;
+				c = get_next_byte(get_next_byte_argument);
+			}
+			else if (c == ')')
+			{
+				count_bracket--;
+				if(count_bracket < 0)
+				{
+					error(1,0, "%i: bracket error",line_num);
+				}
+				c = get_next_byte(get_next_byte_argument);
 			}
 			else // other special char
 			{
@@ -225,6 +243,20 @@ make_command_stream (int (*get_next_byte) (void *),
 		{
 			line_num++;
 			c = get_next_byte(get_next_byte_argument);
+			// ignoring beginning white space
+    	while((c == ' ') || (c == '\t'))
+			{
+				c = get_next_byte(get_next_byte_argument);
+			}
+			// ignore comment, read until see an end-of-line
+			if (c == '#')
+			{
+				//printf("Comment\n");
+				while (c != '\n')
+					c = get_next_byte(get_next_byte_argument);
+			}
+			if(!is_word(c) && c != ':' && c != EOF)
+				error(1,0, "%i: Unexpedted beginning word", line_num);
 		}
 		else if (!is_word(c) && !is_special_token(c) && c != ' ' && c != '\n' && c != '\t' && c != EOF)
 		{
@@ -232,7 +264,8 @@ make_command_stream (int (*get_next_byte) (void *),
 		}	
   }
 
-	
+	if(count_bracket != 0)
+		error(1,0, "bracket error");
 	//current = &head_stream;
 	//current = 0;
 	command_stream_t result = checked_malloc(sizeof(struct command_stream));
@@ -480,7 +513,42 @@ read_subshell_command(c_stream_t* s)
 
 	cmd = make_subshell_command(cmd); 
 	
-	
+	// dealing with < and >
+	c_stream_t tmp = (*s);
+		
+	if(tmp != NULL && strcmp(tmp->head, "<") == 0) // input
+	{
+		//(*s) = (*s)->next;
+		if(!is_word((*s)->next->head[0])) // after < is not a word
+		{
+			error(1,0, "Read_subshell_command:Syntax error at linenum %i", (*s)->next->line_num);
+		}
+		cmd->input = checked_malloc(2*sizeof(char));
+		strcpy(cmd->input, (*s)->next->head);
+		//printf("input =%s\n", cmd->input);
+		(*s) = (*s)->next;
+		if((*s) != NULL)
+			(*s) = (*s)->next;
+		else
+			error(1,0, "Unexpected error");
+		tmp = (*s);
+	}
+	if(tmp != NULL && strcmp(tmp->head, ">") == 0) // output
+	{
+		//(*s) = (*s)->next;
+		if(!is_word((*s)->next->head[0])) // after < is not a word
+		{
+			error(1,0, "Read_subshell_command:Syntax error at linenum %i", (*s)->next->line_num);
+		}
+		cmd->output = checked_malloc(2*sizeof(char));
+		strcpy(cmd->output, (*s)->next->head);
+		//printf("output =%s\n", cmd->output);
+		(*s) = (*s)->next;
+		if((*s) != NULL)
+			(*s) = (*s)->next;
+		else
+			error(1,0, "Unexpected error");
+	}
 
 	return cmd;
 }
