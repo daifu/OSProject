@@ -12,7 +12,7 @@
 #include <ctype.h>
 #include <string.h>
 
-#define debug
+//#define debug
 
 typedef struct c_stream *c_stream_t;
 
@@ -246,7 +246,9 @@ read_command_stream (command_stream_t s)
   // 1. Check if the c_stream_t s is END or not, if it is, return NULL
   // 2. If the command stream is not END, then process our logic with the stream
   // 3. Return the result
+#ifdef debug
   printf("Using the read_c_stream.\n");
+#endif
 	if(s->s == NULL)
 	{
 		//printf("NULL\n");
@@ -310,22 +312,25 @@ read_and_or_command(c_stream_t* s)
   int is_and_or_cmd = 100;
 	if ((*s) != NULL) 
 		is_and_or_cmd = read_command_type((*s)->head);
-	if((*s) != NULL)
+	while((*s) != NULL && (is_and_or_cmd == AND_COMMAND || is_and_or_cmd == OR_COMMAND))
 	{
-  	if (is_and_or_cmd == AND_COMMAND || is_and_or_cmd == OR_COMMAND) 
-			{
-    	// 2. If the next command is && or ||, then make and_or command
-    	// Read the next command
-    	(*s) = (*s)->next;
-    	command_t next_cmd = read_and_or_command(s);
-    	command_t and_or_cmd;
-    	if (is_and_or_cmd == AND_COMMAND) {
+  	
+    // 2. If the next command is && or ||, then make and_or command
+    // Read the next command
+   	(*s) = (*s)->next;
+   	command_t next_cmd = read_pipeline_command(s);
+   	//command_t and_or_cmd;    	
+		if (is_and_or_cmd == AND_COMMAND) 
+		{
       	cmd = make_and_command(cmd, next_cmd);
-    	} else if (is_and_or_cmd == OR_COMMAND){
-      	cmd = make_or_command(cmd, next_cmd);
-    	}
+    } 
+		else if (is_and_or_cmd == OR_COMMAND)
+		{
+     	cmd = make_or_command(cmd, next_cmd);
+    }
     	//return and_or_cmd;	
-  	}
+  	if ((*s) != NULL) 
+			is_and_or_cmd = read_command_type((*s)->head);
 	}
 return cmd;
 }
