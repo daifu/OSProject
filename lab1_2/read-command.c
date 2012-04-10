@@ -68,14 +68,12 @@ make_command_stream (int (*get_next_byte) (void *),
 	c_stream_t head_stream = NULL;
 	c_stream_t tail_stream = NULL;
   c_stream_t new_stream; 
-	//checked_malloc(sizeof(struct c_stream));
-  //init_c_stream(new_stream);
 
 	int count_bracket = 0;
 	int is_close = 0;
+
   int line_num = 1;
   char c = get_next_byte(get_next_byte_argument);
-  
 	// first word is not a word or :, output error
 	//printf("First word %c\n", c);
 	if(!is_word(c) && c != ':' && c != '(' && c!= '\t' && c != '\n' && c != ' ')
