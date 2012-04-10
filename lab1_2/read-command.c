@@ -76,7 +76,7 @@ make_command_stream (int (*get_next_byte) (void *),
   char c = get_next_byte(get_next_byte_argument);
 	// first word is not a word or :, output error
 	//printf("First word %c\n", c);
-	if(!is_word(c) && c != ':' && c != '(' && c!= '\t' && c != '\n' && c != ' ')
+	if(!is_word(c) && c != ':' && c != '(' && c!= '\t' && c != '\n' && c != ' ' && c != '#')
 		error(1,0, "%i:unexpected first word",line_num);
 	//printf("c is %c\n", c);
   while (c != EOF)
@@ -253,7 +253,7 @@ make_command_stream (int (*get_next_byte) (void *),
 				while (c != '\n')
 					c = get_next_byte(get_next_byte_argument);
 			}
-			if(!is_word(c) && c != ':' && c != EOF && c != '\n')
+			if(!is_word(c) && c != ':' && c != EOF && c != '\n' && c != '#')
 				error(1,0, "%i: Unexpedted beginning word", line_num);
 		}
 		else if (!is_word(c) && !is_special_token(c) && c != ' ' && c != '\n' && c != '\t' && c != EOF)

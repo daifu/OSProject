@@ -1,3 +1,5 @@
+#! /bin/sh
+# comment
 true
 
 g++ -c foo.c
