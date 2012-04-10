@@ -71,12 +71,10 @@ make_command_stream (int (*get_next_byte) (void *),
 	//checked_malloc(sizeof(struct c_stream));
   //init_c_stream(new_stream);
 
-
   int line_num = 1;
   char c = get_next_byte(get_next_byte_argument);
-  
 	// first word is not a word or :, output error
-	if(!is_word(c) || c != ':' || c != '(')
+	if(!is_word(c) && c != ':' && c != '(')
 		error(1,0, "%i:unexpected first word",line_num);
 	//printf("c is %c\n", c);
   while (c != EOF)
