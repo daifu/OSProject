@@ -1,0 +1,17 @@
+Group:
+	Tai Pham	603897752
+	Daifu Ye	403910231
+
+Lab1a: 
+	The command-stream is built as a tree-like structure, for example: a || b | c is
+											||
+										/		 \
+									a				|
+												/		\
+												b		c
+
+	Then the command is read from the top level, which is and-or command. It include a lot of error checking, sometimes
+	redundant but necessary to make sure that the syntax passed is correct
+	- Limitation: since we don't have a reliable test cases for sequence and subshell command (the test-ok do not provide
+		us test cases for these 2 type of command), we have to test it with our own knowledge and not sure if it cover all
+		possible cases
