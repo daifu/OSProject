@@ -28,7 +28,15 @@ execute_command (command_t c, int time_travel)
   /* FIXME: Replace this with your implementation.  You may need to
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */
-  error (1, 0, "command execution not yet implemented");
+  //error (1, 0, "command execution not yet implemented");
+	if (time_travel == 0)
+	{
+		exec_command_helper(c);
+	}
+	else
+	{
+		error(1, 0, "Error: time travel did not implemented");
+	}
 }
 
 void 
@@ -80,12 +88,12 @@ exec_command_helper (command_t c)
 			}
 			if (c->output != 0)
 			{
-				int out_fd = open(c->output,O_WRONLY | O_TRUNC | O_CREAT);
+				int out_fd = open(c->output,O_CREAT | O_WRONLY | O_TRUNC);
 				if(out_fd == -1)
 				{
 					error(1, 0, "Error: open output file %s", c->output);
 				}
-				if ( dup2(out_fd,0) < 1 )
+				if ( dup2(out_fd,1) < 1 )
 					error(1, 0, "Error: dup2() on %s error", c->output);
 				if ( close(out_fd) < 0 )
 					error(1, 0, "Error: close %s", c->output);

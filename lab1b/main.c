@@ -63,8 +63,6 @@ main (int argc, char **argv)
     {
       printf ("# %d\n", command_number++);
       print_command (command);
-			if(command_number >= 10)
-				break;
     }
     else
     {
