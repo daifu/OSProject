@@ -558,7 +558,7 @@ make_simple_command(c_stream_t* s)
 	//printf("make_simple_command: next head: %s\n", (*s)->head);
 	command_t result = (command_t)checked_malloc(sizeof(struct command));
 	result->type = SIMPLE_COMMAND;
-	result->status = -1;
+	result->status = 0;
 	result->input = NULL;
 	result->output = NULL;
 	
@@ -612,7 +612,7 @@ make_and_command(command_t a1, command_t a2)
 {
 	command_t result = (command_t)checked_malloc(sizeof(struct command));
 	result->type = AND_COMMAND;
-	result->status = -1;
+	result->status = 0;
 	result->input = NULL;
 	result->output = NULL;
 	
@@ -626,7 +626,7 @@ make_or_command(command_t o1, command_t o2)
 {
 	command_t result = (command_t)checked_malloc(sizeof(struct command));
 	result->type = OR_COMMAND;
-	result->status = -1;
+	result->status = 0;
 	result->input = NULL;
 	result->output = NULL;
 	
@@ -639,7 +639,7 @@ make_pipe_command(command_t p1, command_t p2)
 {
 	command_t result = (command_t)checked_malloc(sizeof(struct command));
 	result->type = PIPE_COMMAND;
-	result->status = -1;
+	result->status = 0;
 	result->input = NULL;
 	result->output = NULL;
 	
@@ -652,7 +652,7 @@ make_sequence_command(command_t s1, command_t s2)
 {
 	command_t result = (command_t)checked_malloc(sizeof(struct command));
 	result->type = SEQUENCE_COMMAND;
-	result->status = -1;
+	result->status = 0;
 	result->input = NULL;
 	result->output = NULL;
 	
@@ -666,7 +666,7 @@ make_subshell_command(command_t sub)
 {
 	command_t result = (command_t)checked_malloc(sizeof(struct command));
 	result->type = SUBSHELL_COMMAND;
-	result->status = -1;
+	result->status = 0;
 	result->input = NULL;
 	result->output = NULL;
 	

@@ -46,8 +46,7 @@ exec_command_helper (command_t c)
 	{
 		// Need more work
 		exec_command_helper (c->u.command[0]);
-		exec_command_helper (c->u.command[1]);
-		//return status;
+  	exec_command_helper(c->u.command[1]);
 	}
 	else if (c->type == OR_COMMAND)
 	{
