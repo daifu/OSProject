@@ -116,6 +116,48 @@ exec_command_helper (command_t c)
 	else if (c->type == PIPE_COMMAND)
 	{
 		// TODO
+		// this is hard, need careful testing
+		// take command[0] -> pipe -> command[1] or [0] is parent
+		int pipefd[2];
+		if (pipe(pipefd) == -1) // cannot pipe
+			error(1, 0, "pipe() error");
+		pid_t pid = fork();
+		
+		if (pid == 0) // child process [1]
+		{
+			close(pipefd[1]);
+      if( dup2(pipefd[0], 0)== -1 )
+        error (1, 0, "dup2() error");
+      exec_command_helper(c->u.command[1]);
+
+			_exit(1); // no flush
+		}
+		else if (pid > 0) // parent process [0]
+		{
+			pid_t pid2 = fork();
+			
+			if (pid2 == 0)
+			{
+				close(pipefd[0]);
+      	if( dup2(pipefd[1], 1) == -1 )
+        	error (1, 0, "dup2 error");
+      	exec_command_helper(c->u.command[0]);
+			}
+			else if (pid2 > 0) // parent process, need to wait
+			{
+				int status;
+				close(pipefd[0]);
+				close(pipefd[1]);
+				waitpid(pid2, &status, 0);
+			}
+			else
+				error(1, 0, "fork() error");
+		}
+		else // error
+		{
+			error(1, 0, "fork() error");
+		}
+
 	}
 	else
 	{
