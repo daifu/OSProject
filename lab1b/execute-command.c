@@ -18,7 +18,7 @@ void exec_command_helper (command_t c); // return command success status
 
 
 // time travel function declaration
-void time_travel(command_stream_t s); // time travle main function
+void time_travel_mode(command_stream_t s); // time travle main function
 void tt_cmd_analysis(command_t c); // tt stand for time travel, analyze a command with its io
 
 int
