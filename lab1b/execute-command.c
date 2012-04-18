@@ -106,6 +106,7 @@ exec_command_helper (command_t c)
 		{
 			int status = 0;
 			waitpid(pid, &status, 0); // parent wait for child process pid to terminated
+			c->status = status;
 		}
 		else // error
 		{
@@ -148,7 +149,19 @@ exec_command_helper (command_t c)
 				int status;
 				close(pipefd[0]);
 				close(pipefd[1]);
-				waitpid(pid2, &status, 0);
+				pid_t wait_pid = waitpid(-1, &status, 0); //wait
+				if(wait_pid == pid )
+      	{
+        	c->status = status;
+        	waitpid(pid2, &status, 0);
+      	}
+      	else if(wait_pid == pid2)
+      	{
+       	 	waitpid(pid, &status, 0);
+        	c->status = status;
+      	}
+				else
+					error(1, 0, "Unexpected error");
 			}
 			else
 				error(1, 0, "fork() error");
@@ -164,3 +177,9 @@ exec_command_helper (command_t c)
 		error(1, 0, "Unrecognizable command type");
 	}
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////// TIME TRAVEL MODE STARTING FROM HERE //////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
