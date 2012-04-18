@@ -16,6 +16,11 @@
 
 void exec_command_helper (command_t c); // return command success status
 
+
+// time travel function declaration
+void time_travel(command_stream_t s); // time travle main function
+void tt_cmd_analysis(command_t c); // tt stand for time travel, analyze a command with its io
+
 int
 command_status (command_t c) // 0 = no error, other num = error
 {
@@ -228,5 +233,28 @@ exec_command_helper (command_t c)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////// TIME TRAVEL MODE STARTING FROM HERE //////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+enum file_state
+{
+	IS_READ, // file is read by others 
+	IS_WRITTEN, // file is written by others
+	IS_R_AND_W, // file is both read and written
+	FREE, // file is free to process
+};
+
+// file and its current state
+struct io_file
+{
+	char* name;
+	enum file_state state;
+	int num_write; // num of cmd that writing to this file
+	int num_read; // num of cmd that reading from this file
+};
+typedef struct io_file* io_file_t; 
+
+
+
+
+
 
 
