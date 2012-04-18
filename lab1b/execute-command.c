@@ -46,26 +46,72 @@ exec_command_helper (command_t c)
 	{
 		// Need more work
 		exec_command_helper (c->u.command[0]);
-  	exec_command_helper(c->u.command[1]);
+		if(c->u.command[0]->status == 0)
+		{
+			printf("type = AND, c[0] exited success\n");
+			exec_command_helper(c->u.command[1]);
+			c->status = c->u.command[1]->status;
+		}
+		else
+			c->status = c->u.command[0]->status;  	
 	}
 	else if (c->type == OR_COMMAND)
 	{
 		// Need more work
 		exec_command_helper (c->u.command[0]);
-		exec_command_helper (c->u.command[1]);
-		
-		//return status;
+		if(c->u.command[0]->status == 0)
+		{
+			//printf("type = OR, c[0] exited success\n");
+			exec_command_helper(c->u.command[1]);
+			c->status = c->u.command[1]->status;
+		}
+		else
+			c->status = c->u.command[0]->status;  	
 	}
 	else if (c->type == SUBSHELL_COMMAND)
 	{
-		// io_process
+		// io process
+		if (c->input != 0)
+		{
+			int in_fd = open(c->input,O_RDONLY);
+			if(in_fd == -1)
+			{
+				error(1, 0, "Error: open input file %s", c->input);
+			}
+			if ( dup2(in_fd,0) < 0 )
+				error(1, 0, "Error: dup2() on %s error", c->input);
+			if ( close(in_fd) < 0 )
+				error(1, 0, "Error: close %s", c->input);
+		}
+		if (c->output != 0)
+		{
+			int out_fd = open(c->output,O_CREAT | O_WRONLY | O_TRUNC);
+			if(out_fd == -1)
+			{
+				error(1, 0, "Error: open output file %s", c->output);
+			}
+			if ( dup2(out_fd,1) < 1 )
+				error(1, 0, "Error: dup2() on %s error", c->output);
+			if ( close(out_fd) < 0 )
+				error(1, 0, "Error: close %s", c->output);
+		}
+		
+		// execute
 		exec_command_helper (c->u.subshell_command);
+		c->status = c->u.subshell_command->status;
 	}
 	else if (c->type == SEQUENCE_COMMAND)
 	{
 		// Need more work
 		exec_command_helper (c->u.command[0]);
-		exec_command_helper (c->u.command[1]);
+		if(c->u.command[0]->status == 0)
+		{
+			//printf("type = SEQUENCE, c[0] exited success\n");
+			exec_command_helper(c->u.command[1]);
+			c->status = c->u.command[1]->status;
+		}
+		else
+			c->status = c->u.command[0]->status;  	
 	}
 	else if (c->type == SIMPLE_COMMAND)
 	{
@@ -100,6 +146,7 @@ exec_command_helper (command_t c)
 			
 			// execute command
 			execvp(c->u.word[0], c->u.word );
+			c->status == 0;
 			error(1, 0, "Error: execute simple command\n"); // if exec returns, means error			
 		}
 		else if (pid >0) // child not terminated
