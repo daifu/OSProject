@@ -1,5 +1,5 @@
 // UCLA CS 111 Lab 1 command internals
-
+#include <stdlib.h>
 enum command_type
   {
     AND_COMMAND,         // A && B
@@ -53,4 +53,38 @@ struct command_stream
 {
 	struct c_stream* s;
 };
+
+// data for time travel shell
+enum file_state
+{
+	IS_READ, // file is read by others 
+	IS_WRITTEN, // file is written by others
+	IS_R_AND_W, // file is both read and written
+	FREE, // file is free to process
+};
+
+// input, output list
+struct io_list
+{
+	char* name;
+	enum file_state state;
+	struct io_list* next;
+};
+typedef struct io_list* io_list_t;
+
+// command list
+struct command_list
+{
+	command_t c;
+	
+	io_list_t file_list;
+	
+	int num_of_dependent;
+	int cmd_num; // command number, for testing purpose
+
+	pid_t pid;
+	struct command_list* next;
+};
+typedef struct command_list* command_list_t;
+
 

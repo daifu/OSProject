@@ -234,25 +234,26 @@ exec_command_helper (command_t c)
 ///////////////////////////////// TIME TRAVEL MODE STARTING FROM HERE //////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-enum file_state
+#define INIT_SIZE 20
+
+void 
+tt_cmd_analysis(command_t c) // tt stand for time travel, analyze a command with its io
 {
-	IS_READ, // file is read by others 
-	IS_WRITTEN, // file is written by others
-	IS_R_AND_W, // file is both read and written
-	FREE, // file is free to process
-};
+	// create new cmd node
+	command_list_t new_cmd = checked_malloc(sizeof(struct command_list));
+	new_cmd->c = c;
+	new_cmd->file_list = NULL;
+	new_cmd->num_of_dependent = 0;
+	new_cmd->cmd_num = 0;
+	new_cmd->pid = 0;
+	new_cmd-> next = NULL;	
+}
 
-// file and its current state
-struct io_file
+void 
+time_travel_mode(command_stream_t s) // time travle main function
 {
-	char* name;
-	enum file_state state;
-	int num_write; // num of cmd that writing to this file
-	int num_read; // num of cmd that reading from this file
-};
-typedef struct io_file* io_file_t; 
-
-
+	
+}
 
 
 
