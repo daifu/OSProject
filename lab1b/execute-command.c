@@ -20,7 +20,10 @@ void exec_command_helper (command_t c); // return command success status
 // time travel function declaration
 void time_travel_mode(command_stream_t s); // time travle main function
 void tt_cmd_analysis(command_t c); // tt stand for time travel, analyze a command with its io
-void add_dependencies(command_t c, io_list_t file_list); // add io file of c into dependencies list 
+void add_dependencies(command_t c, command_list_t cmd_list); // add io file of c into dependencies list 
+void add_file_to_list(char* name, command_list_t cmd_list, enum file_state state); // add io file to list
+
+//io_list_t file_list = NULL;
 
 int
 command_status (command_t c) // 0 = no error, other num = error
@@ -41,7 +44,10 @@ execute_command (command_t c, int time_travel)
 	}
 	else
 	{
-		error(1, 0, "Error: time travel did not implemented");
+		//error(1, 0, "Error: time travel did not implemented");
+		// debug
+		tt_cmd_analysis(c);
+		
 	}
 }
 
@@ -237,24 +243,71 @@ exec_command_helper (command_t c)
 
 #define INIT_SIZE 20
 
+// add io file to list
+void
+add_file_to_list(char* name, command_list_t cmd_list, enum file_state state)
+{
+	printf("Add: %s\n", name);
+	if(cmd_list->file_list == NULL) // list is empty
+	{
+		printf("List is NULL\n");
+		cmd_list->file_list = checked_malloc(sizeof(struct io_list));
+		cmd_list->file_list->name = name;
+		cmd_list->file_list->state = state;
+		cmd_list->file_list->next = NULL;
+		//return file_list;
+		printf("List head: %s\n", cmd_list->file_list->name);
+	}
+	else
+	{
+		io_list_t curr = cmd_list->file_list;
+		io_list_t tmp = curr;
+		while(curr != NULL)
+		{
+			if(strcmp(curr->name, name) == 0) // file already in the list
+				return;
+			else
+			{
+				tmp = curr;
+				curr = curr->next;
+			}
+		}
+		// go here means file not in the list
+		curr = checked_malloc(sizeof(struct io_list));
+		curr->name = name;
+		curr->state = state;
+		curr->next = NULL;
+		tmp->next = curr;
+		printf("List head: %s\n", cmd_list->file_list->name);
+		//return file_list;
+	}
+}
+ 
 // add io file of c into dependencies list 
 // recursive call to add all the file from sub-command to the dependencies list too
-void 
-add_dependencies(command_t c, io_list_t file_list) 
+void
+add_dependencies(command_t c, command_list_t cmd_list) 
 {
 	if (c->type == SIMPLE_COMMAND)
 	{
 		if(c->input != 0)
 		{
 			// TODO
+			printf("Input: %s\n", c->input);
+			add_file_to_list(c->input, cmd_list, IS_READ);
+			if(cmd_list->file_list == NULL)
+				printf("NULL in add_dependencies\n");
 		}
 		if(c->output != 0)
 		{
 			// TODO
+			printf("Output\n");
+			add_file_to_list(c->output, cmd_list, IS_WRITTEN);
 		}
 		int i = 1;
 		while( c->u.word[i]!= NULL)
     {
+			add_file_to_list(c->u.word[i], cmd_list, IS_READ);
 			i++;
 		}
 	}
@@ -263,17 +316,19 @@ add_dependencies(command_t c, io_list_t file_list)
 		if(c->input != 0)
 		{
 			// TODO
+			add_file_to_list(c->input, cmd_list, IS_READ);
 		}
 		if(c->output != 0)
 		{
 			// TODO
+			add_file_to_list(c->output, cmd_list, IS_WRITTEN);
 		}
-		add_dependencies(c->u.subshell_command, file_list);
+		add_dependencies(c->u.subshell_command, cmd_list);
 	}
 	else if (c->type == AND_COMMAND || c->type == OR_COMMAND || c->type == PIPE_COMMAND || c->type == SEQUENCE_COMMAND)
 	{
-		add_dependencies(c->u.command[0], file_list);
-		add_dependencies(c->u.command[1], file_list);
+		add_dependencies(c->u.command[0], cmd_list);
+		add_dependencies(c->u.command[1], cmd_list);
 	}
 	else // unregconized command type
 	{
@@ -294,6 +349,20 @@ tt_cmd_analysis(command_t c) // tt stand for time travel, analyze a command with
 	new_cmd-> next = NULL;
 
 	// TODO	
+	add_dependencies(c, new_cmd);
+		
+	if(new_cmd->file_list == NULL)
+			printf("NULL\n");
+	printf("Command dependencies list: ");
+	io_list_t curr = new_cmd->file_list;
+	int i = 0;
+	while(curr != NULL && i != 10)
+	{
+		printf("%s ", curr->name);
+		curr = curr->next;
+		i++;
+	}
+	printf("\n");
 }
 
 void 
