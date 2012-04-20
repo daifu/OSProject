@@ -20,6 +20,7 @@ void exec_command_helper (command_t c); // return command success status
 // time travel function declaration
 void time_travel_mode(command_stream_t s); // time travle main function
 void tt_cmd_analysis(command_t c); // tt stand for time travel, analyze a command with its io
+void add_dependencies(command_t c, io_list_t file_list); // add io file of c into dependencies list 
 
 int
 command_status (command_t c) // 0 = no error, other num = error
@@ -236,6 +237,50 @@ exec_command_helper (command_t c)
 
 #define INIT_SIZE 20
 
+// add io file of c into dependencies list 
+// recursive call to add all the file from sub-command to the dependencies list too
+void 
+add_dependencies(command_t c, io_list_t file_list) 
+{
+	if (c->type == SIMPLE_COMMAND)
+	{
+		if(c->input != 0)
+		{
+			// TODO
+		}
+		if(c->output != 0)
+		{
+			// TODO
+		}
+		int i = 1;
+		while( c->u.word[i]!= NULL)
+    {
+			i++;
+		}
+	}
+	else if (c->type == SUBSHELL_COMMAND)
+	{
+		if(c->input != 0)
+		{
+			// TODO
+		}
+		if(c->output != 0)
+		{
+			// TODO
+		}
+		add_dependencies(c->u.subshell_command, file_list);
+	}
+	else if (c->type == AND_COMMAND || c->type == OR_COMMAND || c->type == PIPE_COMMAND || c->type == SEQUENCE_COMMAND)
+	{
+		add_dependencies(c->u.command[0], file_list);
+		add_dependencies(c->u.command[1], file_list);
+	}
+	else // unregconized command type
+	{
+		error(1, 0, "Error: unregconized command type %d", c->type);
+	}
+}
+
 void 
 tt_cmd_analysis(command_t c) // tt stand for time travel, analyze a command with its io
 {
@@ -246,13 +291,15 @@ tt_cmd_analysis(command_t c) // tt stand for time travel, analyze a command with
 	new_cmd->num_of_dependent = 0;
 	new_cmd->cmd_num = 0;
 	new_cmd->pid = 0;
-	new_cmd-> next = NULL;	
+	new_cmd-> next = NULL;
+
+	// TODO	
 }
 
 void 
 time_travel_mode(command_stream_t s) // time travle main function
 {
-	
+	// TODO
 }
 
 
