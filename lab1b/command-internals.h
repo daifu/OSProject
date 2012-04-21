@@ -72,6 +72,15 @@ struct io_list
 };
 typedef struct io_list* io_list_t;
 
+// struct that contain the require command to be executed before current command
+struct require_list
+{
+	int cmd_num;
+	int is_required; // 0 = no, 1 = yes
+	struct requre_list* next;
+};
+typedef struct require_list* require_list_t;
+
 // command list
 struct command_list
 {

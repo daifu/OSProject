@@ -71,7 +71,7 @@ exec_command_helper (command_t c)
 	{
 		// Need more work
 		exec_command_helper (c->u.command[0]);
-		if(c->u.command[0]->status == 0)
+		if(c->u.command[0]->status != 0)
 		{
 			//printf("type = OR, c[0] exited success\n");
 			exec_command_helper(c->u.command[1]);
@@ -241,7 +241,29 @@ exec_command_helper (command_t c)
 ///////////////////////////////// TIME TRAVEL MODE STARTING FROM HERE //////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define INIT_SIZE 20
+#define INIT_SIZE 50
+
+int** dependent_array;
+
+void initialize_dependent_array()
+{
+	dependent_array = (int**)checked_malloc(INIT_SIZE * sizeof(int*));
+	int i;
+	for (i = 0; i < INIT_SIZE; i++)
+	{
+		dependent_array[i] = (int*)checked_malloc(INIT_SIZE * sizeof(int));
+	}
+
+	int j;
+	for (j = 0; j < INIT_SIZE; j++)
+	{
+		int k;
+		for (k = 0; k < INIT_SIZE; k++)
+		{
+			dependent_array[j][k] = -1;
+		}
+	}
+}
 
 // add io file to list
 void
@@ -336,9 +358,51 @@ add_dependencies(command_t c, command_list_t cmd_list)
 	}
 }
 
+// analyze the new node with the current node that already on the list to
+// determine the dependency of this new node with the current node
+void 
+analyze_dependencies(command_list_t new_node, command_list_t current_node)
+{
+	io_list_t new_file = new_node->file_list;
+	
+	// traverse through each dependent file on new node and check each for current node
+	while (new_file != NULL)
+	{
+		io_list_t curr_file = current_node->file_list;
+		while (curr_file != NULL)
+		{
+			if (strcmp(curr_file->name, new_file->name) == 0) // same file
+			{
+				if(new_file->state == IS_READ && curr_file->state == IS_WRITTEN) // new cmd requires input from a file that is written by others
+				{
+					new_node->num_of_dependent++;
+					// TODO
+					// need to update the look-up table
+					dependent_array[new_node->cmd_num][current_node->cmd_num] = 1;
+					return;
+				}
+				if(new_file->state == IS_WRITTEN)
+				{
+					new_node->num_of_dependent++;
+					// TODO
+					// need to update the look-up table
+					dependent_array[new_node->cmd_num][current_node->cmd_num] = 1;
+					return;
+				}
+			}
+			curr_file = curr_file->next;
+		}
+		new_file = new_file->next;
+	}
+	dependent_array[new_node->cmd_num][current_node->cmd_num] = 0;
+}
+
 void 
 tt_cmd_analysis(command_t c) // tt stand for time travel, analyze a command with its io
 {
+	// this piece of code should go to next function
+
+	initialize_dependent_array();
 	// create new cmd node
 	command_list_t new_cmd = checked_malloc(sizeof(struct command_list));
 	new_cmd->c = c;
@@ -349,6 +413,7 @@ tt_cmd_analysis(command_t c) // tt stand for time travel, analyze a command with
 	new_cmd-> next = NULL;
 
 	// TODO	
+	// need to update look up table
 	add_dependencies(c, new_cmd);
 		
 	if(new_cmd->file_list == NULL)
