@@ -243,6 +243,12 @@ exec_command_helper (command_t c)
 ///////////////////////////////// TIME TRAVEL MODE STARTING FROM HERE //////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+// TODO
+// 4/23
+// NEED TO GROW ARRAY, NOW IT FIXED SIZE
+// AND NEVER REALLOC
+
 #define INIT_SIZE 20
 
 // look-up table
@@ -580,6 +586,7 @@ time_travel_mode(command_stream_t command_stream) // time travle main function
 					{
 						sum += dependent_array[update->cmd_num][j];
 					}
+					printf("Cmd %d now requires %d cmd\n", update->cmd_num, sum);
 					update->num_of_dependent = sum;				
 					update = update->next;
 				}
