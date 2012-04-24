@@ -62,7 +62,7 @@ exec_command_helper (command_t c)
 		exec_command_helper (c->u.command[0]);
 		if(c->u.command[0]->status == 0)
 		{
-			printf("type = AND, c[0] exited success\n");
+			//printf("type = AND, c[0] exited success\n");
 			exec_command_helper(c->u.command[1]);
 			c->status = c->u.command[1]->status;
 		}
@@ -264,7 +264,7 @@ void initialize_dependent_array()
 		int k;
 		for (k = 0; k < INIT_SIZE; k++)
 		{
-			dependent_array[j][k] = -1;
+			dependent_array[j][k] = 0;
 		}
 	}
 }
@@ -433,30 +433,26 @@ tt_cmd_analysis(command_t c, int cmd_num) // tt stand for time travel, analyze a
 void 
 time_travel_mode(command_stream_t command_stream) // time travle main function
 {
-	// TODO
-	// 04/23: need update cmd number and stuff
 	command_t command;
 	int line_num = 1;
 	initialize_dependent_array();
 
 	command_list_t head = NULL;
 
+	// add dependencies and stuff
 	while ((command = read_command_stream (command_stream)))
 	{
-		//tt_cmd_analysis(command, line_num);
-		// create new cmd node
 		command_list_t new_cmd = checked_malloc(sizeof(struct command_list));
 		new_cmd->c = command;
 		new_cmd->file_list = NULL;
 		new_cmd->num_of_dependent = 0;
 		new_cmd->cmd_num = line_num;
-		new_cmd->pid = 0;
+		new_cmd->pid = -10; // arbitrary number that not child and parent
 		new_cmd-> next = NULL;
 		
-		// TODO	
-		// need to update look up table
 		add_dependencies(command, new_cmd);
 
+/*
 #ifdef DEBUG
 		if(new_cmd->file_list == NULL)
 			printf("NULL\n");
@@ -471,10 +467,13 @@ time_travel_mode(command_stream_t command_stream) // time travle main function
 		}
 		printf("\n");
 #endif
+*/
 		// traverse through the graph to add dependencies
 		command_list_t last = head;
 		command_list_t curr = head;
 		
+		if (head != NULL)
+			printf("Head is Cmd %d\n", head->cmd_num);
 		while(curr != NULL)
 		{
 			analyze_dependencies(new_cmd, curr);
@@ -482,7 +481,7 @@ time_travel_mode(command_stream_t command_stream) // time travle main function
 			curr = curr->next;
 		}
 
-		if (curr == NULL) // empty list
+		if (last == NULL) // empty list
 		{
 			// add head
 			head = new_cmd;
@@ -493,6 +492,106 @@ time_travel_mode(command_stream_t command_stream) // time travle main function
 		}
 		line_num++;
 	}
+/*
+	if (head != NULL)
+			printf("Head outside is Cmd %d\n", head->cmd_num);
+	int i;
+	for( i = 0; i < INIT_SIZE; i++)
+	{
+		int j;
+		for (j = 0; j < INIT_SIZE; j++)
+		{
+			if (dependent_array[i][j] > 0)
+			{ 
+				printf("Cmd %d requires Cmd %d\n", i, j);
+			}
+		}
+	}
+	command_list_t curr = head;
+	while(curr != NULL)
+	{
+		printf("Cmd %d requires %d cmds\n", curr->cmd_num, curr->num_of_dependent);
+		curr = curr->next;
+	}
+*/
+
+
+	// Execute time travel
+	// TODO
+	command_list_t curr = head;
+	while(head != NULL)
+	{
+		while(curr != NULL)
+		{
+			// If current command/node does not require other cmd to be executed before
+			// then execute current cmd
+			if(curr->num_of_dependent == 0 && curr->pid < 1)
+			{
+				pid_t pid = fork();
+				if (pid < 0)
+        	error(1, 0, "Fork error: %s\n", strerror(errno));
+				else if ( pid == 0) // child
+        {
+        	exec_command_helper(curr->c);
+	        _exit(curr->c->status); 
+        }
+        else if ( pid > 0) // parent then save pid and wait
+        {
+        	curr->pid = pid;
+        }
+			}
+			curr = curr->next;
+		}
+	
+		int status;
+		pid_t curr_pid = waitpid(-1, &status, 0); // parent wait for chid
+		
+		// Remove node from graph and update look-up table and stuff
+		command_list_t prev = NULL;
+		command_list_t traverse = head;
+		while(traverse != NULL)
+		{
+			if(traverse->pid == curr_pid) // same pid, this node has finish executing
+			{
+				// update table
+				int i;
+				for(i = 0; i < line_num; i++)
+				{
+					dependent_array[i][traverse->cmd_num] = 0;
+				}
+
+				//remove from the list
+				if(prev == NULL) // head
+				{
+					head = traverse->next;
+				}
+				else
+				{
+					prev->next = traverse->next;
+				}
+
+				// update dependency number on each node
+				command_list_t update = head;
+				while(update != NULL)
+				{
+					int sum = 0;
+					int j;
+					for(j=0; j<line_num; j++)
+					{
+						sum += dependent_array[update->cmd_num][j];
+					}
+					update->num_of_dependent = sum;				
+					update = update->next;
+				}
+				break;
+			}
+			prev = traverse;
+			traverse = traverse->next;
+		}
+
+		if(head != NULL)
+			head = head->next;
+	} 
 }
 
 
