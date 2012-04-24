@@ -15,3 +15,6 @@ Lab1a:
 	- Limitation: since we don't have a reliable test cases for sequence and subshell command (the test-ok do not provide
 		us test cases for these 2 type of command), we have to test it with our own knowledge and not sure if it cover all
 		possible cases
+
+Lab1b:
+	No known limitation, all of the text cases run good
