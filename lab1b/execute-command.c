@@ -90,7 +90,8 @@ exec_command_helper (command_t c)
 			int in_fd = open(c->input,O_RDONLY);
 			if(in_fd == -1)
 			{
-				error(1, 0, "Error: open input file %s", c->input);
+				//error(1, 0, "Error: open input file %s", c->input);
+				error(1, 0, "Input file error: %s\n", strerror(errno));
 			}
 			if ( dup2(in_fd,0) < 0 )
 				error(1, 0, "Error: dup2() on %s error", c->input);
@@ -99,10 +100,11 @@ exec_command_helper (command_t c)
 		}
 		if (c->output != 0)
 		{
-			int out_fd = open(c->output,O_CREAT | O_WRONLY | O_TRUNC);
+			int out_fd = open(c->output,O_CREAT | O_WRONLY | O_TRUNC,0666);
 			if(out_fd == -1)
 			{
-				error(1, 0, "Error: open output file %s", c->output);
+				//error(1, 0, "Error: open output file %s", c->output);
+				error(1, 0, "Output file error: %s\n", strerror(errno));
 			}
 			if ( dup2(out_fd,1) < 1 )
 				error(1, 0, "Error: dup2() on %s error", c->output);
@@ -138,7 +140,8 @@ exec_command_helper (command_t c)
 				int in_fd = open(c->input,O_RDONLY);
 				if(in_fd == -1)
 				{
-					error(1, 0, "Error: open input file %s", c->input);
+					//error(1, 0, "Error: open input file %s", c->input);
+					error(1, 0, "Input file error: %s\n", strerror(errno));
 				}
 				if ( dup2(in_fd,0) < 0 )
 					error(1, 0, "Error: dup2() on %s error", c->input);
@@ -147,10 +150,11 @@ exec_command_helper (command_t c)
 			}
 			if (c->output != 0)
 			{
-				int out_fd = open(c->output,O_CREAT | O_WRONLY | O_TRUNC);
+				int out_fd = open(c->output,O_CREAT | O_WRONLY | O_TRUNC,0666);
 				if(out_fd == -1)
 				{
-					error(1, 0, "Error: open output file %s", c->output);
+					//error(1, 0, "Error: open output file %s", c->output);
+					error(1, 0, "Output file error: %s\n", strerror(errno));
 				}
 				if ( dup2(out_fd,1) < 1 )
 					error(1, 0, "Error: dup2() on %s error", c->output);
