@@ -14,12 +14,14 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#define DEBUG
+
 void exec_command_helper (command_t c); // return command success status
 
 
 // time travel function declaration
 //void time_travel_mode(command_stream_t s); // time travle main function
-void tt_cmd_analysis(command_t c); // tt stand for time travel, analyze a command with its io
+void tt_cmd_analysis(command_t c, int cmd_num); // tt stand for time travel, analyze a command with its io
 void add_dependencies(command_t c, command_list_t cmd_list); // add io file of c into dependencies list 
 void add_file_to_list(char* name, command_list_t cmd_list, enum file_state state); // add io file to list
 
@@ -271,16 +273,16 @@ void initialize_dependent_array()
 void
 add_file_to_list(char* name, command_list_t cmd_list, enum file_state state)
 {
-	printf("Add: %s\n", name);
+	//printf("Add: %s\n", name);
 	if(cmd_list->file_list == NULL) // list is empty
 	{
-		printf("List is NULL\n");
+		//printf("List is NULL\n");
 		cmd_list->file_list = checked_malloc(sizeof(struct io_list));
 		cmd_list->file_list->name = name;
 		cmd_list->file_list->state = state;
 		cmd_list->file_list->next = NULL;
 		//return file_list;
-		printf("List head: %s\n", cmd_list->file_list->name);
+		//printf("List head: %s\n", cmd_list->file_list->name);
 	}
 	else
 	{
@@ -302,7 +304,7 @@ add_file_to_list(char* name, command_list_t cmd_list, enum file_state state)
 		curr->state = state;
 		curr->next = NULL;
 		tmp->next = curr;
-		printf("List head: %s\n", cmd_list->file_list->name);
+		//printf("List head: %s\n", cmd_list->file_list->name);
 		//return file_list;
 	}
 }
@@ -316,16 +318,12 @@ add_dependencies(command_t c, command_list_t cmd_list)
 	{
 		if(c->input != 0)
 		{
-			// TODO
-			printf("Input: %s\n", c->input);
 			add_file_to_list(c->input, cmd_list, IS_READ);
 			if(cmd_list->file_list == NULL)
 				printf("NULL in add_dependencies\n");
 		}
 		if(c->output != 0)
 		{
-			// TODO
-			printf("Output\n");
 			add_file_to_list(c->output, cmd_list, IS_WRITTEN);
 		}
 		int i = 1;
@@ -339,12 +337,10 @@ add_dependencies(command_t c, command_list_t cmd_list)
 	{
 		if(c->input != 0)
 		{
-			// TODO
 			add_file_to_list(c->input, cmd_list, IS_READ);
 		}
 		if(c->output != 0)
 		{
-			// TODO
 			add_file_to_list(c->output, cmd_list, IS_WRITTEN);
 		}
 		add_dependencies(c->u.subshell_command, cmd_list);
@@ -381,6 +377,7 @@ analyze_dependencies(command_list_t new_node, command_list_t current_node)
 					// TODO
 					// need to update the look-up table
 					dependent_array[new_node->cmd_num][current_node->cmd_num] = 1;
+					printf("Dependency add: cmd #%d is read file %s that cmd #%d is writing to\n", new_node->cmd_num, new_file->name, current_node->cmd_num);
 					return;
 				}
 				if(new_file->state == IS_WRITTEN)
@@ -389,6 +386,7 @@ analyze_dependencies(command_list_t new_node, command_list_t current_node)
 					// TODO
 					// need to update the look-up table
 					dependent_array[new_node->cmd_num][current_node->cmd_num] = 1;
+					printf("Dependency add: cmd #%d is write file %s that cmd #%d is writing or reading to\n", new_node->cmd_num, new_file->name, current_node->cmd_num);
 					return;
 				}
 			}
@@ -400,7 +398,7 @@ analyze_dependencies(command_list_t new_node, command_list_t current_node)
 }
 
 void 
-tt_cmd_analysis(command_t c) // tt stand for time travel, analyze a command with its io
+tt_cmd_analysis(command_t c, int cmd_num) // tt stand for time travel, analyze a command with its io
 {
 	// this piece of code should go to next function
 
@@ -410,7 +408,7 @@ tt_cmd_analysis(command_t c) // tt stand for time travel, analyze a command with
 	new_cmd->c = c;
 	new_cmd->file_list = NULL;
 	new_cmd->num_of_dependent = 0;
-	new_cmd->cmd_num = 0;
+	new_cmd->cmd_num = cmd_num;
 	new_cmd->pid = 0;
 	new_cmd-> next = NULL;
 
@@ -436,10 +434,64 @@ void
 time_travel_mode(command_stream_t command_stream) // time travle main function
 {
 	// TODO
+	// 04/23: need update cmd number and stuff
 	command_t command;
+	int line_num = 1;
+	initialize_dependent_array();
+
+	command_list_t head = NULL;
+
 	while ((command = read_command_stream (command_stream)))
 	{
-		tt_cmd_analysis(command);
+		//tt_cmd_analysis(command, line_num);
+		// create new cmd node
+		command_list_t new_cmd = checked_malloc(sizeof(struct command_list));
+		new_cmd->c = command;
+		new_cmd->file_list = NULL;
+		new_cmd->num_of_dependent = 0;
+		new_cmd->cmd_num = line_num;
+		new_cmd->pid = 0;
+		new_cmd-> next = NULL;
+		
+		// TODO	
+		// need to update look up table
+		add_dependencies(command, new_cmd);
+
+#ifdef DEBUG
+		if(new_cmd->file_list == NULL)
+			printf("NULL\n");
+		printf("Command dependencies list: ");
+		io_list_t cur = new_cmd->file_list;
+		int i = 0;
+		while(cur != NULL && i != 10)
+		{
+			printf("%s ", cur->name);
+			cur = cur->next;
+			i++;
+		}
+		printf("\n");
+#endif
+		// traverse through the graph to add dependencies
+		command_list_t last = head;
+		command_list_t curr = head;
+		
+		while(curr != NULL)
+		{
+			analyze_dependencies(new_cmd, curr);
+			last = curr;
+			curr = curr->next;
+		}
+
+		if (curr == NULL) // empty list
+		{
+			// add head
+			head = new_cmd;
+		}
+		else
+		{
+			last->next = new_cmd;
+		}
+		line_num++;
 	}
 }
 
