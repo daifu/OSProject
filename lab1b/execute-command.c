@@ -18,7 +18,7 @@ void exec_command_helper (command_t c); // return command success status
 
 
 // time travel function declaration
-void time_travel_mode(command_stream_t s); // time travle main function
+//void time_travel_mode(command_stream_t s); // time travle main function
 void tt_cmd_analysis(command_t c); // tt stand for time travel, analyze a command with its io
 void add_dependencies(command_t c, command_list_t cmd_list); // add io file of c into dependencies list 
 void add_file_to_list(char* name, command_list_t cmd_list, enum file_state state); // add io file to list
@@ -44,9 +44,9 @@ execute_command (command_t c, int time_travel)
 	}
 	else
 	{
-		//error(1, 0, "Error: time travel did not implemented");
+		error(1, 0, "Error: time travel did not implemented");
 		// debug
-		tt_cmd_analysis(c);
+		//tt_cmd_analysis(c);
 		
 	}
 }
@@ -241,8 +241,10 @@ exec_command_helper (command_t c)
 ///////////////////////////////// TIME TRAVEL MODE STARTING FROM HERE //////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define INIT_SIZE 50
+#define INIT_SIZE 20
 
+// look-up table
+// a[1][2] means 2 needs to be completed before 1 or 1 requires 2
 int** dependent_array;
 
 void initialize_dependent_array()
@@ -431,9 +433,14 @@ tt_cmd_analysis(command_t c) // tt stand for time travel, analyze a command with
 }
 
 void 
-time_travel_mode(command_stream_t s) // time travle main function
+time_travel_mode(command_stream_t command_stream) // time travle main function
 {
 	// TODO
+	command_t command;
+	while ((command = read_command_stream (command_stream)))
+	{
+		tt_cmd_analysis(command);
+	}
 }
 
 
