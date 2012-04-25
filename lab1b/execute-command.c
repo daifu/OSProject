@@ -265,16 +265,12 @@ exec_command_helper (command_t c)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-// TODO
-// 4/23
-// NEED TO GROW ARRAY, NOW IT FIXED SIZE
-// AND NEVER REALLOC
-
-#define INIT_SIZE 20
+#define INIT_SIZE 40
 
 // look-up table
 // a[1][2] means 2 needs to be completed before 1 or 1 requires 2
 int** dependent_array;
+int current_size = INIT_SIZE;
 
 void initialize_dependent_array()
 {
@@ -401,8 +397,7 @@ analyze_dependencies(command_list_t new_node, command_list_t current_node)
 				if(new_file->state == IS_READ && curr_file->state == IS_WRITTEN) // new cmd requires input from a file that is written by others
 				{
 					new_node->num_of_dependent++;
-					// TODO
-					// need to update the look-up table
+					
 					dependent_array[new_node->cmd_num][current_node->cmd_num] = 1;
 					printf("Dependency add: cmd #%d is read file %s that cmd #%d is writing to\n", new_node->cmd_num, new_file->name, current_node->cmd_num);
 					return;
@@ -410,10 +405,9 @@ analyze_dependencies(command_list_t new_node, command_list_t current_node)
 				if(new_file->state == IS_WRITTEN)
 				{
 					new_node->num_of_dependent++;
-					// TODO
-					// need to update the look-up table
+					
 					dependent_array[new_node->cmd_num][current_node->cmd_num] = 1;
-					printf("Dependency add: cmd #%d is write file %s that cmd #%d is writing or reading to\n", new_node->cmd_num, new_file->name, current_node->cmd_num);
+					//printf("Dependency add: cmd #%d is write file %s that cmd #%d is writing or reading to\n", new_node->cmd_num, new_file->name, current_node->cmd_num);
 					return;
 				}
 			}
@@ -477,6 +471,16 @@ time_travel_mode(command_stream_t command_stream) // time travle main function
 		new_cmd->pid = -10; // arbitrary number that not child and parent
 		new_cmd-> next = NULL;
 		
+
+		// if number of cmd > current array size
+		// update it
+		if (line_num >= current_size)
+		{
+			current_size *= 2;
+			size_t resize =  current_size * sizeof(int);
+			dependent_array = checked_grow_alloc(dependent_array, &resize);
+		}
+
 		add_dependencies(command, new_cmd);
 
 /*
@@ -499,8 +503,7 @@ time_travel_mode(command_stream_t command_stream) // time travle main function
 		command_list_t last = head;
 		command_list_t curr = head;
 		
-		if (head != NULL)
-			printf("Head is Cmd %d\n", head->cmd_num);
+		
 		while(curr != NULL)
 		{
 			analyze_dependencies(new_cmd, curr);
@@ -607,7 +610,7 @@ time_travel_mode(command_stream_t command_stream) // time travle main function
 					{
 						sum += dependent_array[update->cmd_num][j];
 					}
-					printf("Cmd %d now requires %d cmd\n", update->cmd_num, sum);
+					//printf("Cmd %d now requires %d cmd\n", update->cmd_num, sum);
 					update->num_of_dependent = sum;				
 					update = update->next;
 				}
