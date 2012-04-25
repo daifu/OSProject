@@ -62,7 +62,6 @@ exec_command_helper (command_t c)
 		exec_command_helper (c->u.command[0]);
 		if(c->u.command[0]->status == 0)
 		{
-			//printf("type = AND, c[0] exited success\n");
 			exec_command_helper(c->u.command[1]);
 			c->status = c->u.command[1]->status;
 		}
@@ -75,7 +74,6 @@ exec_command_helper (command_t c)
 		exec_command_helper (c->u.command[0]);
 		if(c->u.command[0]->status != 0)
 		{
-			//printf("type = OR, c[0] exited success\n");
 			exec_command_helper(c->u.command[1]);
 			c->status = c->u.command[1]->status;
 		}
@@ -91,12 +89,14 @@ exec_command_helper (command_t c)
 			if(in_fd == -1)
 			{
 				//error(1, 0, "Error: open input file %s", c->input);
-				error(1, 0, "Input file error: %s\n", strerror(errno));
+				error(1, 0, "Input file error: %s", strerror(errno));
 			}
 			if ( dup2(in_fd,0) < 0 )
-				error(1, 0, "Error: dup2() on %s error", c->input);
+				//error(1, 0, "Error: dup2() on %s error", c->input);
+				error(1, 0, "dup2 error: %s", strerror(errno));
 			if ( close(in_fd) < 0 )
-				error(1, 0, "Error: close %s", c->input);
+				//error(1, 0, "Error: close %s", c->input);
+				error(1, 0, "close error: %s", strerror(errno));
 		}
 		if (c->output != 0)
 		{
@@ -104,12 +104,14 @@ exec_command_helper (command_t c)
 			if(out_fd == -1)
 			{
 				//error(1, 0, "Error: open output file %s", c->output);
-				error(1, 0, "Output file error: %s\n", strerror(errno));
+				error(1, 0, "Output file error: %s", strerror(errno));
 			}
 			if ( dup2(out_fd,1) < 1 )
-				error(1, 0, "Error: dup2() on %s error", c->output);
+				//error(1, 0, "Error: dup2() on %s error", c->output);
+				error(1, 0, "dup2 error: %s", strerror(errno));
 			if ( close(out_fd) < 0 )
-				error(1, 0, "Error: close %s", c->output);
+				//error(1, 0, "Error: close %s", c->output);
+				error(1, 0, "close error: %s", strerror(errno));
 		}
 		
 		// execute
@@ -144,9 +146,11 @@ exec_command_helper (command_t c)
 					error(1, 0, "Input file error: %s\n", strerror(errno));
 				}
 				if ( dup2(in_fd,0) < 0 )
-					error(1, 0, "Error: dup2() on %s error", c->input);
+					//error(1, 0, "Error: dup2() on %s error", c->input);
+					error(1, 0, "dup2 error: %s", strerror(errno));
 				if ( close(in_fd) < 0 )
-					error(1, 0, "Error: close %s", c->input);
+					//error(1, 0, "Error: close %s", c->input);
+					error(1, 0, "close error: %s", strerror(errno));
 			}
 			if (c->output != 0)
 			{
@@ -157,15 +161,18 @@ exec_command_helper (command_t c)
 					error(1, 0, "Output file error: %s\n", strerror(errno));
 				}
 				if ( dup2(out_fd,1) < 1 )
-					error(1, 0, "Error: dup2() on %s error", c->output);
+					//error(1, 0, "Error: dup2() on %s error", c->output);
+					error(1, 0, "dup2 error: %s", strerror(errno));
 				if ( close(out_fd) < 0 )
-					error(1, 0, "Error: close %s", c->output);
+					//error(1, 0, "Error: close %s", c->output);
+					error(1, 0, "close error: %s", strerror(errno));
 			}
 			
 			// execute command
 			execvp(c->u.word[0], c->u.word );
 			c->status == 0;
-			error(1, 0, "Error: execute simple command\n"); // if exec returns, means error			
+			//error(1, 0, "Error: execute simple command\n"); // if exec returns, means error	
+			error(1, 0, "Output file error: %s", strerror(errno));		
 		}
 		else if (pid >0) // child not terminated
 		{
@@ -175,25 +182,28 @@ exec_command_helper (command_t c)
 		}
 		else // error
 		{
-			error(1, 0, "Fork error");
+			//error(1, 0, "Fork error");
+			error(1, 0, "fork() error: %s", strerror(errno));
 		}
 		// execute command
 	}
 	else if (c->type == PIPE_COMMAND)
 	{
-		// TODO
-		// this is hard, need careful testing
 		// take command[0] -> pipe -> command[1] or [0] is parent
 		int pipefd[2];
 		if (pipe(pipefd) == -1) // cannot pipe
-			error(1, 0, "pipe() error");
+			//error(1, 0, "pipe() error");
+			error(1, 0, "pipe error: %s", strerror(errno));
 		pid_t pid = fork();
 		
 		if (pid == 0) // child process [1]
 		{
 			close(pipefd[1]);
       if( dup2(pipefd[0], 0)== -1 )
-        error (1, 0, "dup2() error");
+			{
+        //error (1, 0, "dup2() error");
+				error(1, 0, "dup2 error: %s", strerror(errno));
+			}
       exec_command_helper(c->u.command[1]);
 
 			_exit(1); // no flush
@@ -206,7 +216,10 @@ exec_command_helper (command_t c)
 			{
 				close(pipefd[0]);
       	if( dup2(pipefd[1], 1) == -1 )
-        	error (1, 0, "dup2 error");
+				{
+        	//error (1, 0, "dup2 error");
+					error(1, 0, "dup2 error: %s", strerror(errno));
+				}
       	exec_command_helper(c->u.command[0]);
 			}
 			else if (pid2 > 0) // parent process, need to wait
@@ -229,11 +242,15 @@ exec_command_helper (command_t c)
 					error(1, 0, "Unexpected error");
 			}
 			else
-				error(1, 0, "fork() error");
+			{
+				//error(1, 0, "fork() error");
+				error(1, 0, "fork() error: %s", strerror(errno));
+			}
 		}
 		else // error
 		{
-			error(1, 0, "fork() error");
+			//error(1, 0, "fork() error");
+			error(1, 0, "fork() error: %s", strerror(errno));
 		}
 
 	}
